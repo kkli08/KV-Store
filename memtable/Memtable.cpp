@@ -4,5 +4,3 @@
 
 #include "Memtable.h"
 
-namespace Memtable {
-} // Memtable

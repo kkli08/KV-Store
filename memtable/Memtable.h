@@ -5,12 +5,9 @@
 #ifndef MEMTABLE_H
 #define MEMTABLE_H
 
-namespace Memtable {
-
 class Memtable {
 
 };
 
-} // Memtable
 
 #endif //MEMTABLE_H
