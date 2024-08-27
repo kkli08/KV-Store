@@ -6,9 +6,9 @@
 
 TEST(BinaryTreeTest, InsertAndSearch) {
     BinaryTree tree;
-    tree.insert(5);
-    tree.insert(3);
-    tree.insert(7);
+    tree.insert(5, 29);
+    tree.insert(3, 23);
+    tree.insert(7, 47);
 
     EXPECT_TRUE(tree.search(5));
     EXPECT_TRUE(tree.search(3));
@@ -18,9 +18,9 @@ TEST(BinaryTreeTest, InsertAndSearch) {
 
 TEST(BinaryTreeTest, InorderTraversal) {
     BinaryTree tree;
-    tree.insert(5);
-    tree.insert(3);
-    tree.insert(7);
+    tree.insert(5, 29);
+    tree.insert(3, 28);
+    tree.insert(7, 27);
 
     testing::internal::CaptureStdout();
     tree.inorderTraversal();
@@ -31,9 +31,9 @@ TEST(BinaryTreeTest, InorderTraversal) {
 
 TEST(BinaryTreeTest, PreorderTraversal) {
     BinaryTree tree;
-    tree.insert(5);
-    tree.insert(3);
-    tree.insert(7);
+    tree.insert(5, 29);
+    tree.insert(3, 28);
+    tree.insert(7, 27);
 
     testing::internal::CaptureStdout();
     tree.preorderTraversal();
@@ -44,9 +44,9 @@ TEST(BinaryTreeTest, PreorderTraversal) {
 
 TEST(BinaryTreeTest, PostorderTraversal) {
     BinaryTree tree;
-    tree.insert(5);
-    tree.insert(3);
-    tree.insert(7);
+    tree.insert(5, 29);
+    tree.insert(3, 28);
+    tree.insert(7, 27);
 
     testing::internal::CaptureStdout();
     tree.postorderTraversal();

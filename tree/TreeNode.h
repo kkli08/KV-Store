@@ -9,13 +9,14 @@ enum Color {RED, BLACK, NA};
 
 class TreeNode {
     public:
+        long long key;
         long long value;
         TreeNode* left;
         TreeNode* right;
         Color color;
         // Constructor
-        TreeNode(long long val);
-        TreeNode(long long val, Color c);
+        TreeNode(long long key, long long value);
+        TreeNode(long long key, long long value, Color c);
         // Destructor
         virtual ~TreeNode();
 

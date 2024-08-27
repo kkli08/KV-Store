@@ -6,12 +6,12 @@
 
 using namespace std;
 
-void Open(string db_name){
+void API::Open(string db_name){
   cout << "Opening database " << db_name << endl;
   return;
 }
 
-void Close(){
+void API::Close(){
   cout << "Closing database " << endl;
   return;
 }

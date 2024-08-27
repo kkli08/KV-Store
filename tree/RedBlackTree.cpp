@@ -5,19 +5,19 @@
 #include "RedBlackTree.h"
 
 // Override insert method
-void RedBlackTree::insert(long long value) {
-  insert(root, value);
+void RedBlackTree::insert(long long _key, long long _value) {
+  insert(root, _key, _value);
   if (root != nullptr){
     root->color = BLACK;  // root always black
   }
 }
 
-void RedBlackTree::insert(TreeNode*& node, long long value){
+void RedBlackTree::insert(TreeNode*& node, long long _key, long long _value){
   if (node == nullptr) {
-    node = new TreeNode(value);
-  } else if (value < node->value) {
-    insert(node->left, value);
+    node = new TreeNode(_key, _value);
+  } else if (_key < node->key) {
+    insert(node->left, _key, _value);
   } else {
-    insert(node->right, value);
+    insert(node->right, _key, _value);
   }
 }

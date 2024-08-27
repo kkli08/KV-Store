@@ -10,8 +10,9 @@
 using namespace std;
 
 int main(){
-  Open("my_database");
-  Close();
+  auto MyDB = new API();
+  MyDB->Open("my_database");
+  MyDB->Close();
   return 0;
 
 }

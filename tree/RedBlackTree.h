@@ -10,10 +10,10 @@
 
 class RedBlackTree : public BinaryTree {
     public:
-        void insert(long long value) override;
+        void insert(long long key, long long value) override;
 
     private:
-        void insert(TreeNode*& node, long long value) override;
+        void insert(TreeNode*& node, long long key, long long value) override;
         void balanceInsert(TreeNode*& node);
 };
 

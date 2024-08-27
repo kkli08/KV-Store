@@ -7,18 +7,21 @@
 // Constructor
 Memtable::Memtable(size_t threshold) {
     memtable_size = threshold;
+    current_size = 0;
+    tree = new RedBlackTree();
 }
 
-// // Destructor
-// Memtable::~Memtable() {
-//     destroyTree(root);
-// }
-//
-// // Helper function to destroy the tree
-// void Memtable::destroyMemtable(RedBlackTreeNode* node) {
-//     if (node != nullptr) {
-//         destroyTree(node->left);
-//         destroyTree(node->right);
-//         delete node;
-//     }
-// }
+// Destructor
+Memtable::~Memtable() {
+    delete tree;
+}
+
+
+void put(long long key, long long value) {
+
+}
+
+long long get(long long key) {
+
+    return 0;
+}

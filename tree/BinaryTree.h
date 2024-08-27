@@ -11,16 +11,16 @@ class BinaryTree {
         BinaryTree();
         virtual ~BinaryTree();
 
-        virtual void insert(long long value);
-        bool search(long long value);
+        virtual void insert(long long key, long long value);
+        bool search(long long key);
         void inorderTraversal();
         void preorderTraversal();
         void postorderTraversal();
 
     protected:
         TreeNode* root;
-        virtual void insert(TreeNode*& node, long long value);
-        bool search(TreeNode* node, long long value);
+        virtual void insert(TreeNode*& node, long long key, long long value);
+        bool search(TreeNode* node, long long key);
         void inorderTraversal(TreeNode* node);
         void preorderTraversal(TreeNode* node);
         void postorderTraversal(TreeNode* node);

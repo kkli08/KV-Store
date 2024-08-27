@@ -20,7 +20,7 @@ enable_testing()
 # Add the test executable
 add_executable(runTests
         tests/binarytree_tests.cpp
-#        tests/redblacktree_unittest.cpp
+        tests/redblacktree_unittest.cpp
         tree/BinaryTree.cpp
         tree/TreeNode.cpp
         tree/RedBlackTree.cpp

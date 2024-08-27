@@ -21,34 +21,34 @@ void BinaryTree::destroyTree(TreeNode* node) {
 }
 
 // Insert a node into the tree
-void BinaryTree::insert(long long value) {
-    insert(root, value);
+void BinaryTree::insert(long long key, long long value) {
+    insert(root, key, value);
 }
 
-void BinaryTree::insert(TreeNode*& node, long long value) {
+void BinaryTree::insert(TreeNode*& node, long long _key, long long _value) {
     if (node == nullptr) {
-        node = new TreeNode(value);
-    } else if (value < node->value) {
-        insert(node->left, value);
+        node = new TreeNode(_key, _value);
+    } else if (_key < node->key) {
+        insert(node->left, _key, _value);
     } else {
-        insert(node->right, value);
+        insert(node->right, _key, _value);
     }
 }
 
-// Search for a value in the tree
-bool BinaryTree::search(long long value) {
-    return search(root, value);
+// Search for a key in the tree
+bool BinaryTree::search(long long _key) {
+    return search(root, _key);
 }
 
-bool BinaryTree::search(TreeNode* node, long long value) {
+bool BinaryTree::search(TreeNode* node, long long _key) {
     if (node == nullptr) {
         return false;
-    } else if (node->value == value) {
+    } else if (node->key == _key) {
         return true;
-    } else if (value < node->value) {
-        return search(node->left, value);
+    } else if (_key < node->key) {
+        return search(node->left, _key);
     } else {
-        return search(node->right, value);
+        return search(node->right, _key);
     }
 }
 
@@ -61,7 +61,7 @@ void BinaryTree::inorderTraversal() {
 void BinaryTree::inorderTraversal(TreeNode* node) {
     if (node != nullptr) {
         inorderTraversal(node->left);
-        std::cout << node->value << " ";
+        std::cout << node->key << " ";
         inorderTraversal(node->right);
     }
 }
@@ -74,7 +74,7 @@ void BinaryTree::preorderTraversal() {
 
 void BinaryTree::preorderTraversal(TreeNode* node) {
     if (node != nullptr) {
-        std::cout << node->value << " ";
+        std::cout << node->key << " ";
         preorderTraversal(node->left);
         preorderTraversal(node->right);
     }
@@ -90,7 +90,7 @@ void BinaryTree::postorderTraversal(TreeNode* node) {
     if (node != nullptr) {
         postorderTraversal(node->left);
         postorderTraversal(node->right);
-        std::cout << node->value << " ";
+        std::cout << node->key << " ";
     }
 }
 
