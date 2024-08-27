@@ -3,7 +3,6 @@
 //
 #include <iostream>
 #include "BinaryTree.h"
-
 // Constructor
 BinaryTree::BinaryTree() : root(nullptr) {}
 
@@ -22,11 +21,11 @@ void BinaryTree::destroyTree(TreeNode* node) {
 }
 
 // Insert a node into the tree
-void BinaryTree::insert(int value) {
+void BinaryTree::insert(long long value) {
     insert(root, value);
 }
 
-void BinaryTree::insert(TreeNode*& node, int value) {
+void BinaryTree::insert(TreeNode*& node, long long value) {
     if (node == nullptr) {
         node = new TreeNode(value);
     } else if (value < node->value) {
@@ -37,11 +36,11 @@ void BinaryTree::insert(TreeNode*& node, int value) {
 }
 
 // Search for a value in the tree
-bool BinaryTree::search(int value) {
+bool BinaryTree::search(long long value) {
     return search(root, value);
 }
 
-bool BinaryTree::search(TreeNode* node, int value) {
+bool BinaryTree::search(TreeNode* node, long long value) {
     if (node == nullptr) {
         return false;
     } else if (node->value == value) {

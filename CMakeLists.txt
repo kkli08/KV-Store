@@ -20,7 +20,10 @@ enable_testing()
 # Add the test executable
 add_executable(runTests
         tests/binarytree_tests.cpp
-        tree/BinaryTree.cpp  # Include the source file you're testing
+#        tests/redblacktree_unittest.cpp
+        tree/BinaryTree.cpp
+        tree/TreeNode.cpp
+        tree/RedBlackTree.cpp
 )
 
 # Link Google Test to the test executable
@@ -36,6 +39,9 @@ set(SOURCE
         api/api.cpp
         memtable/memtable.cpp
         tree/BinaryTree.cpp
+        tree/TreeNode.cpp
+        tree/RedBlackTree.cpp
+
 )
 
 # Include directories (header files)

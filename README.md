@@ -3,7 +3,7 @@ Stores key-value pairs and allows retrieval of a value based on its key.
 ## API
 **Open and Run**
 ```
-Open("kvStore")
+Open("database name")
 ```
 **Stores a key associated with a value**
 ```
@@ -20,4 +20,12 @@ KV-pairs = Scan(Key1, Key2)
 **Close**
 ```
 Close()
+```
+**Update**
+```
+TBA
+```
+**Delete**
+```
+TBA
 ```
