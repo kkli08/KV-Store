@@ -12,6 +12,7 @@ class API {
   private:
     Memtable *memtable;
     int memtable_size = 1e4;
+
   public:
     API() : memtable(new Memtable(memtable_size)) {};
     ~API();
