@@ -11,6 +11,11 @@ Memtable::Memtable(int threshold) {
     tree = new RedBlackTree();
 }
 
+Memtable::Memtable() {
+    memtable_size = 1e4;
+    current_size = 0;
+    tree = new RedBlackTree();
+}
 // Destructor
 Memtable::~Memtable() {
     delete tree;

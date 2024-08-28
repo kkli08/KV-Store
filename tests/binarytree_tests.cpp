@@ -4,53 +4,65 @@
 #include <gtest/gtest.h>
 #include "BinaryTree.h"
 
+// Test for Insert and Search operations
 TEST(BinaryTreeTest, InsertAndSearch) {
-    BinaryTree tree;
-    tree.insert(5, 29);
-    tree.insert(3, 23);
-    tree.insert(7, 47);
+    BinaryTree *tree = new BinaryTree();
+    tree->insert(5, 29);
+    tree->insert(3, 23);
+    tree->insert(7, 47);
 
-    EXPECT_TRUE(tree.search(5));
-    EXPECT_TRUE(tree.search(3));
-    EXPECT_TRUE(tree.search(7));
-    EXPECT_FALSE(tree.search(10));
+    EXPECT_TRUE(tree->search(5));
+    EXPECT_TRUE(tree->search(3));
+    EXPECT_TRUE(tree->search(7));
+    EXPECT_FALSE(tree->search(10));
+
+    delete tree;  // Clean up memory
 }
 
+// Test for Inorder Traversal
 TEST(BinaryTreeTest, InorderTraversal) {
-    BinaryTree tree;
-    tree.insert(5, 29);
-    tree.insert(3, 28);
-    tree.insert(7, 27);
+    BinaryTree *tree = new BinaryTree();
+    tree->insert(5, 29);
+    tree->insert(3, 28);
+    tree->insert(7, 27);
 
     testing::internal::CaptureStdout();
-    tree.inorderTraversal();
+    tree->inorderTraversal();
     std::string output = testing::internal::GetCapturedStdout();
 
     EXPECT_EQ(output, "3 5 7 \n");
+
+    delete tree;  // Clean up memory
 }
 
+// Test for Preorder Traversal
 TEST(BinaryTreeTest, PreorderTraversal) {
-    BinaryTree tree;
-    tree.insert(5, 29);
-    tree.insert(3, 28);
-    tree.insert(7, 27);
+    BinaryTree *tree = new BinaryTree();
+    tree->insert(5, 29);
+    tree->insert(3, 28);
+    tree->insert(7, 27);
 
     testing::internal::CaptureStdout();
-    tree.preorderTraversal();
+    tree->preorderTraversal();
     std::string output = testing::internal::GetCapturedStdout();
 
     EXPECT_EQ(output, "5 3 7 \n");
+
+    delete tree;  // Clean up memory
 }
 
+// Test for Postorder Traversal
 TEST(BinaryTreeTest, PostorderTraversal) {
-    BinaryTree tree;
-    tree.insert(5, 29);
-    tree.insert(3, 28);
-    tree.insert(7, 27);
+    BinaryTree *tree = new BinaryTree();
+    tree->insert(5, 29);
+    tree->insert(3, 28);
+    tree->insert(7, 27);
 
     testing::internal::CaptureStdout();
-    tree.postorderTraversal();
+    tree->postorderTraversal();
     std::string output = testing::internal::GetCapturedStdout();
 
     EXPECT_EQ(output, "3 7 5 \n");
+
+    delete tree;  // Clean up memory
 }

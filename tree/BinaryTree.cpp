@@ -11,6 +11,10 @@ BinaryTree::~BinaryTree() {
     destroyTree(root);
 }
 
+TreeNode* BinaryTree::getRoot() {
+    return root;
+}
+
 // Helper function to destroy the tree
 void BinaryTree::destroyTree(const TreeNode* node) {
     if (node != nullptr) {

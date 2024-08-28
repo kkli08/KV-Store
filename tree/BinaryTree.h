@@ -13,9 +13,9 @@ class BinaryTree {
 
         virtual void insert(long long key, long long value);
         bool search(long long key);
-
+        TreeNode* getRoot();
         // traverse methods
-        void inorderTraversal();
+        virtual void inorderTraversal();
         void preorderTraversal();
         void postorderTraversal();
 

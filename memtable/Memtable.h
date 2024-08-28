@@ -10,6 +10,7 @@
 
 class Memtable {
     public:
+      Memtable();
       Memtable(int threshold);
       ~Memtable();
       void put(long long key, long long value);

@@ -2,6 +2,7 @@
 // Created by Damian Li on 2024-08-26.
 // RBTree ideas from : https://github.com/anandarao/Red-Black-Tree
 #include <utility>
+#include <iostream>
 #include "RedBlackTree.h"
 
 // helper functions:
@@ -14,6 +15,23 @@ void RedBlackTree::setColor(TreeNode *&node, int color){
   node->color = color;
 }
 
+void RedBlackTree::inorderTraversal() {
+    inorderRBT(root);
+}
+
+void RedBlackTree::inorderRBT(TreeNode *&node) {
+    if (node == nullptr) {
+        return; // Base case: if the node is null, return
+    }
+    // Recursively traverse the left subtree
+    inorderRBT(node->left);
+    // Print the key and value of the current node
+    std::cout << "Key: " << node->key << ", Value: " << node->value << ", Color: "
+              << (node->color == RED ? "Red" : (node->color == BLACK ? "Black" :
+                  (node->color == DOUBLE_BLACK ? "Double Black" : "N/A"))) << std::endl;
+    // Recursively traverse the right subtree
+    inorderRBT(node->right);
+}
 
 
 /*

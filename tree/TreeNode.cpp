@@ -10,6 +10,6 @@ TreeNode::TreeNode(long long _key, long long _value, Color c) : key(_key), value
 
 // Destructor
 TreeNode::~TreeNode() {
-  if(left) delete left;
-  if(right) delete right;
+  // if(left) delete left;
+  // if(right) delete right;
 }

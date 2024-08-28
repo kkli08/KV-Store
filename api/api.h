@@ -14,7 +14,7 @@ class API {
     int memtable_size;
 
   public:
-    API() : memtable_size(1e4), memtable(new Memtable(memtable_size)) {};
+    API() : memtable_size(1e4), memtable(new Memtable()) {};
     ~API();
     void Open(string db_name);
     void Close();

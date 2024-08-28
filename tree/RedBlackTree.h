@@ -14,7 +14,7 @@ class RedBlackTree final : public BinaryTree {
         void deleteKey(long long key);  // added
         void updateExistedKeyValue(TreeNode *&root, long long key, long long value);
         void merge(RedBlackTree);
-        void inorder();
+        void inorderTraversal() override;
         void preorder();
 
     protected:
@@ -23,8 +23,8 @@ class RedBlackTree final : public BinaryTree {
         void rotateRight(TreeNode *&); // done
         void fixInsertRBTree(TreeNode *&);  // done
         void fixDeleteRBTree(TreeNode *&);  // added
-        void inorderBST(TreeNode *&);
-        void preorderBST(TreeNode *&);
+        void inorderRBT(TreeNode *&); // done
+        void preorderRBT(TreeNode *&);
         int getColor(TreeNode *&);  // done
         void setColor(TreeNode *&, int);    // done
         TreeNode *minValueNode(TreeNode *&); // added
