@@ -12,7 +12,7 @@ BinaryTree::~BinaryTree() {
 }
 
 // Helper function to destroy the tree
-void BinaryTree::destroyTree(TreeNode* node) {
+void BinaryTree::destroyTree(const TreeNode* node) {
     if (node != nullptr) {
         destroyTree(node->left);
         destroyTree(node->right);

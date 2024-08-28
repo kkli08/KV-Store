@@ -5,7 +5,7 @@
 #ifndef TREENODE_H
 #define TREENODE_H
 
-enum Color {RED, BLACK, NA};
+enum Color {RED, BLACK, DOUBLE_BLACK, NA};
 
 class TreeNode {
     public:
@@ -13,12 +13,13 @@ class TreeNode {
         long long value;
         TreeNode* left;
         TreeNode* right;
-        Color color;
+        TreeNode* parent;
+        int color;
         // Constructor
-        TreeNode(long long key, long long value);
+        TreeNode(long long key, long long value); // insert RED node as default
         TreeNode(long long key, long long value, Color c);
         // Destructor
-        virtual ~TreeNode();
+        ~TreeNode();
 
 };
 

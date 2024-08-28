@@ -13,18 +13,23 @@ class BinaryTree {
 
         virtual void insert(long long key, long long value);
         bool search(long long key);
+
+        // traverse methods
         void inorderTraversal();
         void preorderTraversal();
         void postorderTraversal();
 
     protected:
-        TreeNode* root;
+        TreeNode *root;
         virtual void insert(TreeNode*& node, long long key, long long value);
         bool search(TreeNode* node, long long key);
+
+        // traverse methods
         void inorderTraversal(TreeNode* node);
         void preorderTraversal(TreeNode* node);
         void postorderTraversal(TreeNode* node);
-        void destroyTree(TreeNode* node);
+
+        static void destroyTree(const TreeNode* node);
 };
 
 #endif //BINARYTREE_H

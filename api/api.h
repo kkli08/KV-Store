@@ -11,10 +11,10 @@ using namespace std;
 class API {
   private:
     Memtable *memtable;
-    int memtable_size = 1e4;
+    int memtable_size;
 
   public:
-    API() : memtable(new Memtable(memtable_size)) {};
+    API() : memtable_size(1e4), memtable(new Memtable(memtable_size)) {};
     ~API();
     void Open(string db_name);
     void Close();

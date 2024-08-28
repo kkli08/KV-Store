@@ -5,7 +5,7 @@
 #include "Memtable.h"
 
 // Constructor
-Memtable::Memtable(size_t threshold) {
+Memtable::Memtable(int threshold) {
     memtable_size = threshold;
     current_size = 0;
     tree = new RedBlackTree();

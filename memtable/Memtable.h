@@ -10,15 +10,15 @@
 
 class Memtable {
     public:
-      Memtable(size_t threshold);
+      Memtable(int threshold);
       ~Memtable();
       void put(long long key, long long value);
       long long get(long long key);
 
     private:
       RedBlackTree* tree;
-      size_t memtable_size; // maximum size of memtable
-      size_t current_size = 0;
+      int memtable_size; // maximum size of memtable
+      int current_size = 0;
       void flushToDisk();
 };
 

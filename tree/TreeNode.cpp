@@ -5,8 +5,8 @@
 #include "TreeNode.h"
 
 // Constructor
-TreeNode::TreeNode(long long _key, long long _value) : key(_key), value(_value), left(nullptr), right(nullptr), color(RED) {}
-TreeNode::TreeNode(long long _key, long long _value, Color c) : key(_key), value(_value), left(nullptr), right(nullptr), color(c) {}
+TreeNode::TreeNode(long long _key, long long _value) : key(_key), value(_value), left(nullptr), right(nullptr), parent(nullptr), color(RED) {}
+TreeNode::TreeNode(long long _key, long long _value, Color c) : key(_key), value(_value), left(nullptr), right(nullptr), parent(nullptr), color(c) {}
 
 // Destructor
 TreeNode::~TreeNode() {
