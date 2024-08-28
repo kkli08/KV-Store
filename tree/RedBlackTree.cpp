@@ -33,6 +33,24 @@ void RedBlackTree::inorderRBT(TreeNode *&node) {
     inorderRBT(node->right);
 }
 
+long long RedBlackTree::getValue(long long key) {
+    if(search(key)) {
+        // return value
+        return getValue(root, key);
+    }
+    return -1;
+}
+
+long long RedBlackTree::getValue(TreeNode *&node, long long _key) {
+    if (node->key == _key) {
+        return node->value;
+    } else if (_key < node->key) {
+        return getValue(node->left, _key);
+    } else {
+        return getValue(node->right, _key);
+    }
+    return -1;
+}
 
 /*
  * Red Black Tree Insertions

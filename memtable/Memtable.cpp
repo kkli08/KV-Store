@@ -21,12 +21,26 @@ Memtable::~Memtable() {
     delete tree;
 }
 
-
-void put(long long key, long long value) {
-
+void Memtable::put(long long key, long long value) {
+    if (current_size < memtable_size) {
+        tree->insert(key, value);
+        current_size++;
+    } else if (current_size == memtable_size) {
+        // flush to disk and reset current_size to 0
+        flushToDisk();
+        current_size = 0;
+    }
 }
 
-long long get(long long key) {
+long long Memtable::get(long long key) {
+    return tree->getValue(key);
+}
 
-    return 0;
+void Memtable::set_path(fs::path _path) {
+    path = _path;
+}
+
+// save data into .sst file
+void Memtable::flushToDisk() {
+
 }

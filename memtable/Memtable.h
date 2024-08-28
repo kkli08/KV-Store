@@ -7,6 +7,9 @@
 #include <cstdint>
 #include <cstddef>
 #include "RedBlackTree.h"
+#include <filesystem> // C++17 lib
+
+namespace fs = std::filesystem;
 
 class Memtable {
     public:
@@ -15,11 +18,13 @@ class Memtable {
       ~Memtable();
       void put(long long key, long long value);
       long long get(long long key);
+      void set_path(fs::path);
 
     private:
       RedBlackTree* tree;
       int memtable_size; // maximum size of memtable
       int current_size = 0;
+      fs::path path;
       void flushToDisk();
 };
 

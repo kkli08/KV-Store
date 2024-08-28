@@ -3,7 +3,8 @@ cmake_minimum_required(VERSION 3.10)  # Specify the minimum version of CMake
 project(KVStore)
 
 # GoogleTest requires at least C++14
-set(CMAKE_CXX_STANDARD 14)
+# <filesystem> needs C++17
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include(FetchContent)
@@ -21,9 +22,12 @@ enable_testing()
 add_executable(runTests
         tests/binarytree_tests.cpp
         tests/redblacktree_unittest.cpp
+        tests/api_unittest.cpp
         tree/BinaryTree.cpp
         tree/TreeNode.cpp
         tree/RedBlackTree.cpp
+        api/api.cpp
+        memtable/Memtable.cpp
 )
 
 # Link Google Test to the test executable

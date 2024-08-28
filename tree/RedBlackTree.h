@@ -16,6 +16,7 @@ class RedBlackTree final : public BinaryTree {
         void merge(RedBlackTree);
         void inorderTraversal() override;
         void preorder();
+        long long getValue(long long key);
 
     protected:
         TreeNode* insert(TreeNode *&, TreeNode *&); // done
@@ -32,6 +33,7 @@ class RedBlackTree final : public BinaryTree {
         // TreeNode* insertBST(TreeNode *&, TreeNode *&); // same as insert(TreeNode *&, TreeNode *&)
         TreeNode* deleteBST(TreeNode *&, long long);    // added
         int getBlackHeight(TreeNode *); // added
+        long long getValue(TreeNode *&, long long);
 };
 
 #endif //REDBLACKTREE_H
