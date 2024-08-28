@@ -19,13 +19,13 @@ class Memtable {
       void put(long long key, long long value);
       long long get(long long key);
       void set_path(fs::path);
+      void flushToDisk();
 
-    private:
+private:
       RedBlackTree* tree;
       int memtable_size; // maximum size of memtable
       int current_size = 0;
       fs::path path;
-      void flushToDisk();
 };
 
 

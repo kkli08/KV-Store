@@ -8,9 +8,8 @@
 #include "api.h"
 
 using namespace std;
-
 int main(){
-  auto MyDB = new API();
+  auto MyDB = new kvdb::API();
   MyDB->Open("my_database");
   MyDB->Close();
   return 0;

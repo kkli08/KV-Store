@@ -8,6 +8,7 @@
 #include "api.h"
 
 namespace fs = std::filesystem;
+using namespace kvdb;
 
 TEST(APITest, OpenNewDatabase) {
     API* api = new API();

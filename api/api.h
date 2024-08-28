@@ -10,7 +10,8 @@
 
 namespace fs = std::filesystem;
 using namespace std;
-class API {
+namespace kvdb {
+    class API {
     public:
         API() : memtable_size(1e4), memtable(new Memtable()) {};
         ~API();
@@ -29,5 +30,6 @@ class API {
         void set_path(fs::path);
         void cleanup();
 
-};
+    };
+}
 #endif //API_H

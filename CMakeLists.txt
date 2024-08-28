@@ -23,6 +23,7 @@ add_executable(runTests
         tests/binarytree_tests.cpp
         tests/redblacktree_unittest.cpp
         tests/api_unittest.cpp
+        tests/memtable_unittest.cpp
         tree/BinaryTree.cpp
         tree/TreeNode.cpp
         tree/RedBlackTree.cpp

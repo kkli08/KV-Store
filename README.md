@@ -1,31 +1,48 @@
-# KV-Store
+## KV-Store Database
 Stores key-value pairs and allows retrieval of a value based on its key.
-## API
-**Open and Run**
+### API
+**kvdb::API::Open(string db_name)**
+> Initializes the database system for all database files, including SSTs and other related data.
 ```c++
-Open("database name")
+auto MyDB = new kvdb::API();
+MyDB->Open("database name");
 ```
-**Stores a key associated with a value**
+**kvdb::API::Put(int_64 key, int_64 value)**
+> Put key-value pair into the database.
 ```c++
-Put(key, value)
+auto MyDB = new kvdb::API();
+long long key = 1, value = 100;
+MyDB->Open("database name");
+MyDB->Put(key, value);
 ```
-**Retrieves a value associated with a given key**
+**kvdb::API::Get(int_64)**
+> Return value by the key.
 ```c++
-Value = Get(key)
+auto MyDB = new kvdb::API();
+long long key = 1, value;
+MyDB->Open("database name");
+MyDB->Put(key, value);
+value = MyDB->Get(key);
 ```
-**Retrieves all KV-pairs in a key range in key order (key1 < key2)**
+**kvdb::API::Close()**
+> Close the db, move all the data in memory into disk (SSTs).
+```c++
+auto MyDB = new kvdb::API();
+MyDB->Open("database name");
+MyDB->Close();
+```
+**kvdb::API::Scan(int_64, int_64)**
+> Retrieves all KV-pairs in a key range in key order (key1 < key2)
 ```c++
 KV-pairs = Scan(Key1, Key2)
 ```
-**Close**
-```c++
-Close()
-```
-**Update**
+**kvdb::API::Update()**
+> Update the data.
 ```c++
 TBA
 ```
-**Delete**
+**kvdb::API::Delete()**
+> Delete the data.
 ```c++
 TBA
 ```
