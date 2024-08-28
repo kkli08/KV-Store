@@ -6,7 +6,11 @@
 #define REDBLACKTREE_H
 #include "TreeNode.h"
 #include "BinaryTree.h"
+#include <fstream>
+#include <utility>
+#include <vector>
 
+using namespace std;
 
 class RedBlackTree final : public BinaryTree {
     public:
@@ -17,6 +21,8 @@ class RedBlackTree final : public BinaryTree {
         void inorderTraversal() override;
         void preorder();
         long long getValue(long long key);
+        vector<pair<long long, long long>> inOrderFlushToSst();
+        // TreeNode* getRoot();
 
     protected:
         TreeNode* insert(TreeNode *&, TreeNode *&); // done
@@ -34,6 +40,7 @@ class RedBlackTree final : public BinaryTree {
         TreeNode* deleteBST(TreeNode *&, long long);    // added
         int getBlackHeight(TreeNode *); // added
         long long getValue(TreeNode *&, long long);
+        void inorderTraversal(TreeNode *, vector<pair<long long, long long>> &);
 };
 
 #endif //REDBLACKTREE_H

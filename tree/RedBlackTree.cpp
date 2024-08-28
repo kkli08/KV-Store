@@ -5,6 +5,7 @@
 #include <iostream>
 #include "RedBlackTree.h"
 
+using namespace std;
 // helper functions:
 int RedBlackTree::getColor(TreeNode *&node){
   if (node == nullptr) return BLACK;
@@ -14,6 +15,10 @@ void RedBlackTree::setColor(TreeNode *&node, int color){
   if (node == nullptr) return;
   node->color = color;
 }
+
+// TreeNode* RedBlackTree::getRoot() {
+//     return root;
+// }
 
 void RedBlackTree::inorderTraversal() {
     inorderRBT(root);
@@ -31,6 +36,21 @@ void RedBlackTree::inorderRBT(TreeNode *&node) {
                   (node->color == DOUBLE_BLACK ? "Double Black" : "N/A"))) << std::endl;
     // Recursively traverse the right subtree
     inorderRBT(node->right);
+}
+
+vector<pair<long long, long long>> RedBlackTree::inOrderFlushToSst() {
+    vector<pair<long long, long long>> kv_pairs;
+    inorderTraversal(root, kv_pairs);
+    return kv_pairs;
+}
+
+void RedBlackTree::inorderTraversal(TreeNode* node, vector<pair<long long, long long>> &kv_pairs) {
+    if (node == nullptr) {
+        return;
+    }
+    inorderTraversal(node->left, kv_pairs);
+    kv_pairs.push_back({node->key, node->value});
+    inorderTraversal(node->right, kv_pairs);
 }
 
 long long RedBlackTree::getValue(long long key) {

@@ -5,6 +5,6 @@
 #include <string>
 #include <fstream>
 #include <filesystem>
-#include "memtable.h"
+#include "Memtable.h"
 
 namespace fs = std::filesystem;

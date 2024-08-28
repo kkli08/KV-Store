@@ -155,3 +155,88 @@ TEST(RedBlackTreeTest, UpdateExistedValue) {
     EXPECT_EQ(output, expectedOutput);
     delete rbt;
 }
+
+
+TEST(RedBlackTreeTest, InOrderFlushSingleNode) {
+    RedBlackTree* rbt = new RedBlackTree();
+    long long key = 10;
+    long long value = 100;
+    rbt->insert(key, value);
+
+    // Perform inOrderFlushToSst
+    std::vector<std::pair<long long, long long>> kv_pairs = rbt->inOrderFlushToSst();
+
+    // Verify the output
+    ASSERT_EQ(kv_pairs.size(), 1);
+    EXPECT_EQ(kv_pairs[0].first, key);
+    EXPECT_EQ(kv_pairs[0].second, value);
+
+    delete rbt;
+}
+
+
+TEST(RedBlackTreeTest, InOrderFlushMultipleNodes) {
+    RedBlackTree* rbt = new RedBlackTree();
+    rbt->insert(10, 100);
+    rbt->insert(20, 200);
+    rbt->insert(5, 50);
+
+    // Perform inOrderFlushToSst
+    std::vector<std::pair<long long, long long>> kv_pairs = rbt->inOrderFlushToSst();
+
+    // Verify the output
+    ASSERT_EQ(kv_pairs.size(), 3);
+    EXPECT_EQ(kv_pairs[0].first, 5);
+    EXPECT_EQ(kv_pairs[0].second, 50);
+    EXPECT_EQ(kv_pairs[1].first, 10);
+    EXPECT_EQ(kv_pairs[1].second, 100);
+    EXPECT_EQ(kv_pairs[2].first, 20);
+    EXPECT_EQ(kv_pairs[2].second, 200);
+
+    delete rbt;
+}
+
+TEST(RedBlackTreeTest, InOrderFlushCompleteTree) {
+    RedBlackTree* rbt = new RedBlackTree();
+    rbt->insert(30, 300);
+    rbt->insert(20, 200);
+    rbt->insert(40, 400);
+    rbt->insert(10, 100);
+    rbt->insert(25, 250);
+
+    std::vector<std::pair<long long, long long>> kv_pairs = rbt->inOrderFlushToSst();
+
+    // Verify the output
+    ASSERT_EQ(kv_pairs.size(), 5);
+    EXPECT_EQ(kv_pairs[0].first, 10);
+    EXPECT_EQ(kv_pairs[0].second, 100);
+    EXPECT_EQ(kv_pairs[1].first, 20);
+    EXPECT_EQ(kv_pairs[1].second, 200);
+    EXPECT_EQ(kv_pairs[2].first, 25);
+    EXPECT_EQ(kv_pairs[2].second, 250);
+    EXPECT_EQ(kv_pairs[3].first, 30);
+    EXPECT_EQ(kv_pairs[3].second, 300);
+    EXPECT_EQ(kv_pairs[4].first, 40);
+    EXPECT_EQ(kv_pairs[4].second, 400);
+
+    delete rbt;
+}
+
+TEST(RedBlackTreeTest, InOrderFlushDuplicateKeys) {
+    RedBlackTree* rbt = new RedBlackTree();
+    rbt->insert(15, 150);
+    rbt->insert(15, 250); // Attempt to insert duplicate key with a different value
+    rbt->insert(5, 50);
+
+    // Perform inOrderFlushToSst
+    std::vector<std::pair<long long, long long>> kv_pairs = rbt->inOrderFlushToSst();
+
+    // Verify the output, depending on your tree's handling of duplicates
+    ASSERT_EQ(kv_pairs.size(), 2); // Assuming the duplicate is either ignored or updated
+    EXPECT_EQ(kv_pairs[0].first, 5);
+    EXPECT_EQ(kv_pairs[0].second, 50);
+    EXPECT_EQ(kv_pairs[1].first, 15);
+    EXPECT_EQ(kv_pairs[1].second, 250); // Or 150 depending on your implementation
+
+    delete rbt;
+}

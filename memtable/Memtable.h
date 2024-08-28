@@ -10,6 +10,7 @@
 #include <filesystem> // C++17 lib
 
 namespace fs = std::filesystem;
+using namespace std;
 
 class Memtable {
     public:
@@ -21,11 +22,15 @@ class Memtable {
       void set_path(fs::path);
       void flushToDisk();
 
-private:
+      // helper function
+      void int_flush();
+
+    private:
       RedBlackTree* tree;
       int memtable_size; // maximum size of memtable
       int current_size = 0;
       fs::path path;
+      string generateSstFilename();
 };
 
 

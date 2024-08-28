@@ -1,5 +1,6 @@
 ## KV-Store Database
 Stores key-value pairs and allows retrieval of a value based on its key.
+> 2024-08-28 Support <int, int> 
 ### API
 **kvdb::API::Open(string db_name)**
 > Initializes the database system for all database files, including SSTs and other related data.

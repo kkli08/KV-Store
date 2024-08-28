@@ -3,6 +3,16 @@
 //
 
 #include "Memtable.h"
+#include <fstream>
+#include <chrono>
+#include <iomanip>
+#include <vector>
+#include <string>
+#include <filesystem>
+#include <sstream>
+
+using namespace std;
+namespace fs = std::filesystem;
 
 // Constructor
 Memtable::Memtable(int threshold) {
@@ -42,5 +52,25 @@ void Memtable::set_path(fs::path _path) {
 
 // save data into .sst file
 void Memtable::flushToDisk() {
+    int_flush();
+}
 
+void Memtable::int_flush() {
+    auto kv_pairs = tree->inOrderFlushToSst();
+    string filename = generateSstFilename();
+    fs::path filepath = path / filename;
+
+    ofstream sst_file(filepath);
+    for (const auto& pair : kv_pairs) {
+        sst_file << pair.first << ", " << pair.second << "\n";
+    }
+    sst_file.close();
+}
+
+string Memtable::generateSstFilename() {
+    auto now = std::chrono::system_clock::now();
+    auto in_time_t = std::chrono::system_clock::to_time_t(now);
+    std::stringstream ss;
+    ss << std::put_time(std::localtime(&in_time_t), "%Y_%m_%d_%H%M%S");
+    return ss.str() + ".sst";
 }
