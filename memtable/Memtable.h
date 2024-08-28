@@ -24,13 +24,14 @@ class Memtable {
 
       // helper function
       void int_flush();
+      string generateSstFilename();
 
     private:
       RedBlackTree* tree;
       int memtable_size; // maximum size of memtable
       int current_size = 0;
       fs::path path;
-      string generateSstFilename();
+
 };
 
 
