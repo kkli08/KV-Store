@@ -10,6 +10,7 @@
 #include <string>
 #include <filesystem>
 #include <sstream>
+#include <iostream>
 
 using namespace std;
 namespace fs = std::filesystem;
@@ -19,6 +20,7 @@ Memtable::Memtable(int threshold) {
     memtable_size = threshold;
     current_size = 0;
     tree = new RedBlackTree();
+    path = "defaultDB";
 }
 
 Memtable::Memtable() {
@@ -36,9 +38,18 @@ void Memtable::put(long long key, long long value) {
         tree->insert(key, value);
         current_size++;
     } else if (current_size == memtable_size) {
-        // flush to disk and reset current_size to 0
-        flushToDisk();
-        current_size = 0;
+        // search() first to see if the value need to be updated
+        if(!tree->search(key)) {
+            // flush to disk and reset current_size to 0
+            flushToDisk();
+            current_size = 0;
+            // relocate memory for tree
+            delete tree;
+            tree = new RedBlackTree();
+        }
+        // insert pair
+        tree->insert(key, value);
+        current_size++;
     }
 }
 
@@ -49,13 +60,27 @@ long long Memtable::get(long long key) {
 void Memtable::set_path(fs::path _path) {
     path = _path;
 }
+fs::path Memtable::get_path() {
+    return path;
+}
 
 // save data into .sst file
 void Memtable::flushToDisk() {
     int_flush();
 }
 
-void Memtable::int_flush() {
+
+string Memtable::int_flush() {
+    // Check if the directory exists
+    if (!fs::exists(path)) {
+        // Directory does not exist, so create it
+        if (fs::create_directory(path)) {
+            // std::cout << "Created database directory: " << path << std::endl;
+        } else {
+            std::cerr << "Failed to create directory: " << path << std::endl;
+        }
+    }
+
     auto kv_pairs = tree->inOrderFlushToSst();
     string filename = generateSstFilename();
     fs::path filepath = path / filename;
@@ -65,12 +90,14 @@ void Memtable::int_flush() {
         sst_file << pair.first << ", " << pair.second << "\n";
     }
     sst_file.close();
+
+    return filename;
 }
 
 string Memtable::generateSstFilename() {
     auto now = std::chrono::system_clock::now();
     auto in_time_t = std::chrono::system_clock::to_time_t(now);
     std::stringstream ss;
-    ss << std::put_time(std::localtime(&in_time_t), "%Y_%m_%d_%H%M%S");
+    ss << std::put_time(std::localtime(&in_time_t), "%Y_%m_%d_%H%M");
     return ss.str() + ".sst";
 }

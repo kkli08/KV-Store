@@ -20,10 +20,11 @@ class Memtable {
       void put(long long key, long long value);
       long long get(long long key);
       void set_path(fs::path);
+      fs::path get_path();
       void flushToDisk();
 
       // helper function
-      void int_flush();
+      string int_flush();
       string generateSstFilename();
 
     private:
