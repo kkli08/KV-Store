@@ -22,7 +22,6 @@ class RedBlackTree final : public BinaryTree {
         void preorder();
         long long getValue(long long key);
         vector<pair<long long, long long>> inOrderFlushToSst();
-        // TreeNode* getRoot();
 
     protected:
         TreeNode* insert(TreeNode *&, TreeNode *&); // done

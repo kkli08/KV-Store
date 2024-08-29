@@ -8,7 +8,7 @@
 #include <iomanip>
 #include <vector>
 #include <string>
-#include <filesystem>
+#include <filesystem> // c++17 features
 #include <sstream>
 #include <iostream>
 
@@ -20,7 +20,7 @@ Memtable::Memtable(int threshold) {
     memtable_size = threshold;
     current_size = 0;
     tree = new RedBlackTree();
-    path = "defaultDB";
+    path = fs::path("defaultDB");
 }
 
 Memtable::Memtable() {

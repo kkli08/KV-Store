@@ -25,11 +25,16 @@ namespace kvdb {
         Memtable *memtable;
         int memtable_size;
         fs::path path;
+        bool is_open;
         // helper function: set memtable_size
         void set_memtable_size(int _size);
         void set_path(fs::path);
         void cleanup();
-
+        void check_if_open() const {
+            if (!is_open) {
+                throw runtime_error("Database is not open. Please open the database before performing operations.");
+            }
+        }
     };
 }
 #endif //API_H

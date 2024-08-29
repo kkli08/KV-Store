@@ -27,12 +27,18 @@ namespace kvdb {
     }
     // set api attribute fs::path
     set_path(db_path);
+
+    // set flag
+    is_open = true;
   }
 
   void API::Close(){
+    check_if_open();
     std::cout << "Closing database " << std::endl;
     // The close command should transform whatever is in the current Memtable into an SST
     memtable->flushToDisk();
+    // set flag
+    is_open = false;
     // clean up memory
     cleanup();
   }
@@ -56,5 +62,29 @@ namespace kvdb {
   void API::set_path(fs::path _path) {
     path = _path;
     memtable->set_path(_path);
+  }
+
+  void API::Put(long long key, long long value) {
+    // Put method
+    // check if db is open
+    check_if_open();
+
+    memtable->put(key, value);
+  }
+
+  long long API::Get(long long key) {
+    // Get method
+    // check if db is open
+    check_if_open();
+
+    // check memtable
+    if (memtable->get(key) != -1) {
+      return memtable->get(key);
+    }
+
+    // check in SSTs.
+
+
+    return -1;
   }
 }
