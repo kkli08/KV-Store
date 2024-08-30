@@ -27,30 +27,29 @@ namespace kvdb {
     }
     // set api attribute fs::path
     set_path(db_path);
-
     // set flag
     is_open = true;
+    // retrieve all SST index
+    index->getAllSSTs();
   }
 
   void API::Close(){
     check_if_open();
     std::cout << "Closing database " << std::endl;
     // The close command should transform whatever is in the current Memtable into an SST
-    // FlushSSTInfo* info = memtable->flushToDisk();
-    // /*
-    //  *  Insert file into SSTIndex
-    //  *
-    //  */
-    // if(info->largest_key >= info->smallest_key) {
-    //   // non-empty SST file
-    // } else {
-    //   // empty SST file, delete it
-    //
-    // }
+    FlushSSTInfo* info = memtable->flushToDisk();
+    /*
+     *  Insert file into SSTIndex
+     *
+     */
+    if(info->largest_key >= info->smallest_key) {
+      // non-empty SST file
+      index->addSST(info->fileName, info->smallest_key, info->smallest_key);
+    }
     // set flag
     is_open = false;
     // clean up memory
-    // delete info;
+    delete info;
     cleanup();
   }
 
