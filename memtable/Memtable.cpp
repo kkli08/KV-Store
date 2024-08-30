@@ -58,6 +58,11 @@ long long Memtable::get(long long key) {
 }
 
 void Memtable::set_path(fs::path _path) {
+    // Check if the directory exists
+    if (!fs::exists(_path)) {
+        // If the directory does not exist, create it
+        fs::create_directories(_path);
+    }
     path = _path;
 }
 fs::path Memtable::get_path() {

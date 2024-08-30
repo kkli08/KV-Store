@@ -7,13 +7,14 @@
 #include <string>
 #include "Memtable.h"
 #include <filesystem> // C++17 lib
+#include "SSTIndex.h"
 
 namespace fs = std::filesystem;
 using namespace std;
 namespace kvdb {
     class API {
     public:
-        API() : memtable_size(1e4), memtable(new Memtable()) {};
+        API() : memtable_size(1e4), memtable(new Memtable()), index(new SSTIndex()) {};
         ~API();
         void Open(string db_name);
         void Close();
@@ -23,6 +24,7 @@ namespace kvdb {
 
     private:
         Memtable *memtable;
+        SSTIndex *index;
         int memtable_size;
         fs::path path; // path for store SSTs
         bool is_open;

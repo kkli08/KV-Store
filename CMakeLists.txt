@@ -24,11 +24,13 @@ add_executable(runTests
         tests/redblacktree_unittest.cpp
         tests/api_unittest.cpp
         tests/memtable_unittest.cpp
+        tests/sstIndex_unittest.cpp
         tree/BinaryTree.cpp
         tree/TreeNode.cpp
         tree/RedBlackTree.cpp
         api/api.cpp
         memtable/Memtable.cpp
+        SSTIndex/SSTIndex.cpp
 )
 
 # Link Google Test to the test executable
@@ -46,6 +48,7 @@ set(SOURCE
         tree/BinaryTree.cpp
         tree/TreeNode.cpp
         tree/RedBlackTree.cpp
+        SSTIndex/SSTIndex.cpp
 
 )
 
@@ -53,6 +56,8 @@ set(SOURCE
 include_directories(${PROJECT_SOURCE_DIR}/api)
 include_directories(${PROJECT_SOURCE_DIR}/memtable)
 include_directories(${PROJECT_SOURCE_DIR}/tree)
+include_directories(${PROJECT_SOURCE_DIR}/SSTIndex)
+
 
 # Add the executable by specifying the source file(s)
 add_executable(main ${SOURCE})

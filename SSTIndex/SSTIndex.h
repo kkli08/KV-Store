@@ -1,13 +1,15 @@
 //
 // Created by Damian Li on 2024-08-29.
 //
-#include <map>
 #include <vector>
 #include <string>
+#include <deque>
 
 #ifndef SSTINDEX_H
 #define SSTINDEX_H
+#include <filesystem> // C++17 lib
 
+namespace fs = std::filesystem;
 using namespace std;
 
 struct SSTInfo {
@@ -16,30 +18,25 @@ struct SSTInfo {
   long long largest_key;
 };
 
-struct SSTIndexNode{
-  SSTInfo* info;
-  SSTIndexNode* next;
-  SSTIndexNode* prev;
-};
-
 class SSTIndex {
   public:
-  // Retrieve all SSTs (e.g., when reopening the database)
-  const vector<SSTInfo>& getAllSSTs();
-
+  SSTIndex();
+  ~SSTIndex(){};
+  // Retrieve all SSTs into index (e.g., when reopening the database)
+  void getAllSSTs();
   // flush index info into "Index.sst"
   void flushToDisk();
-
   // Add a new SST to the index
-  void addSST(const string& filename, long long smallest_key, long long largest_key) {
-    index[filename] = {filename, smallest_key, largest_key};
-  }
+  void addSST(const string& filename, long long smallest_key, long long largest_key);
+  // get index
+  deque<SSTInfo*> getSSTsIndex() {return index;};
+  // helper function
+  void set_path(fs::path);
 
 private:
-  map<std::string, SSTInfo> index;
+  deque<SSTInfo*> index;
+  fs::path path;
 
 };
-
-
 
 #endif //SSTINDEX_H
