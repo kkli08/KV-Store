@@ -30,6 +30,10 @@ class SSTIndex {
   void addSST(const string& filename, long long smallest_key, long long largest_key);
   // get index
   deque<SSTInfo*> getSSTsIndex() {return index;};
+  // SST file binary search
+  long long SearchInSST(const string& filename, long long _key);
+  // Search in all SST files
+  long long Search(long long);
   // helper function
   void set_path(fs::path);
 
