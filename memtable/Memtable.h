@@ -12,6 +12,15 @@
 namespace fs = std::filesystem;
 using namespace std;
 
+struct FlushSSTInfo {
+    string fileName;
+    long long smallest_key;
+    long long largest_key;
+};
+
+/*
+ * Handle in-memory operations.
+ */
 class Memtable {
     public:
       Memtable();
@@ -21,10 +30,10 @@ class Memtable {
       long long get(long long key);
       void set_path(fs::path);
       fs::path get_path();
-      void flushToDisk();
+      FlushSSTInfo* flushToDisk();
 
       // helper function
-      string int_flush();
+      FlushSSTInfo* int_flush();
       string generateSstFilename();
 
     private:
@@ -32,6 +41,7 @@ class Memtable {
       int memtable_size; // maximum size of memtable
       int current_size = 0;
       fs::path path;
+      int SST_file_size = 0;
 
 };
 

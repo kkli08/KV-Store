@@ -36,10 +36,13 @@ namespace kvdb {
     check_if_open();
     std::cout << "Closing database " << std::endl;
     // The close command should transform whatever is in the current Memtable into an SST
-    memtable->flushToDisk();
+    FlushSSTInfo* info = memtable->flushToDisk();
+    // Insert file into SSTIndex
+
     // set flag
     is_open = false;
     // clean up memory
+    delete info;
     cleanup();
   }
 

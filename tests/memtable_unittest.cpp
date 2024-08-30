@@ -201,7 +201,7 @@ TEST(MemtableTest, GenerateSstFilenameIncludesCurrentTime) {
 
 /*
  * Unit Tests for:
- * void Memtable::int_flush()
+ * FlushSSTInfo Memtable::int_flush()
  */
 TEST(MemtableTest, FlushSingleKeyValuePair) {
     Memtable* memtable = new Memtable();
@@ -210,10 +210,10 @@ TEST(MemtableTest, FlushSingleKeyValuePair) {
     memtable->put(10, 100);
 
     // Perform flush and get the filename used
-    std::string filename = memtable->int_flush();
+    FlushSSTInfo* info = memtable->int_flush();
 
     // Verify the SST file exists
-    fs::path filepath = fs::path("test_db") / filename;
+    fs::path filepath = fs::path("test_db") / info->fileName;
     EXPECT_TRUE(fs::exists(filepath));
 
     // Verify the content of the SST file

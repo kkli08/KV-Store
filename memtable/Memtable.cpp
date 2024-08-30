@@ -65,12 +65,12 @@ fs::path Memtable::get_path() {
 }
 
 // save data into .sst file
-void Memtable::flushToDisk() {
-    int_flush();
+FlushSSTInfo* Memtable::flushToDisk() {
+    return int_flush();
 }
 
 
-string Memtable::int_flush() {
+FlushSSTInfo* Memtable::int_flush() {
     // Check if the directory exists
     if (!fs::exists(path)) {
         // Directory does not exist, so create it
@@ -91,7 +91,8 @@ string Memtable::int_flush() {
     }
     sst_file.close();
 
-    return filename;
+    FlushSSTInfo* info = new FlushSSTInfo{filename, kv_pairs.size() > 0 ? kv_pairs[0].first : 1, kv_pairs.size() > 0 ? kv_pairs[kv_pairs.size()-1].first : -1};
+    return info;
 }
 
 string Memtable::generateSstFilename() {

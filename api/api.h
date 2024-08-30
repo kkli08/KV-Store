@@ -24,7 +24,7 @@ namespace kvdb {
     private:
         Memtable *memtable;
         int memtable_size;
-        fs::path path;
+        fs::path path; // path for store SSTs
         bool is_open;
         // helper function: set memtable_size
         void set_memtable_size(int _size);
