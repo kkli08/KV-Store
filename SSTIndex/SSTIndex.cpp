@@ -87,79 +87,120 @@ void SSTIndex::set_path(fs::path _path) {
 
 
 // SST file binary search
-long long SSTIndex::SearchInSST(const string& filename, long long _key) {
-  std::ifstream infile(path / filename);
+// fixed size line: 8 bytes (key) + 1 byte (comma) + 8 bytes (value) + 1 byte (newline)
+long long SSTIndex::SearchInSST(const std::string& filename, long long _key) {
+  std::ifstream infile(path / filename, std::ios::binary);
   if (!infile.is_open()) {
-    // File doesn't exist
-    return -1;
+    return -1;  // File doesn't exist
   }
 
-  // Reset the file pointer to the beginning
+  // Determine the size of the file
   infile.seekg(0, std::ios::end);
   std::streampos file_size = infile.tellg();
-
   if (file_size == 0) {
-    // File is empty
     infile.close();
-    return -1;
+    return -1;  // File is empty
   }
 
-  /*
-   * Implement binary search in the SST file
-   * This is how the kv data stored in sst:
-   * ofstream sst_file(filepath);
-   * for (const auto& pair : kv_pairs) {
-   *  sst_file << pair.first << ", " << pair.second << "\n";
-   * }
-   * sst_file.close();
-   */
+  // Calculate the number of records in the file
+  const long long record_size = 18;  // 8 bytes (key) + 1 byte (comma) + 8 bytes (value) + 1 byte (newline)
+  long long num_records = file_size / record_size;
+
+  // Initialize binary search bounds
   long long left = 0;
-  long long right = file_size;
-  long long key;
-  long long value;
+  long long right = num_records - 1;
+  long long key, value;
 
   while (left <= right) {
-    // Find the middle position
+    // Calculate the midpoint index
     long long mid = left + (right - left) / 2;
-    infile.seekg(mid);
 
-    // Move to the start of the line to read the full key-value pair
-    // This is necessary because seekg may land in the middle of a line
-    std::string line;
-    std::getline(infile, line);
+    // Seek directly to the midpoint record
+    infile.seekg(mid * record_size, std::ios::beg);
 
-    if (infile.eof()) {
-      infile.clear();  // Clear the eof flag to continue reading
-    }
+    // Read the key-value pair at the current position
+    infile.read(reinterpret_cast<char*>(&key), sizeof(long long int));
+    infile.ignore(1);  // Ignore the comma
+    infile.read(reinterpret_cast<char*>(&value), sizeof(long long int));
+    infile.ignore(1);  // Ignore the newline
 
-    // Skip to the next line if not at the beginning of a new line
-    std::getline(infile, line);
-
-    // Parse the key-value pair
-    std::istringstream iss(line);
-    std::string key_str, value_str;
-    if (std::getline(iss, key_str, ',') && std::getline(iss, value_str)) {
-      key = std::stoll(key_str);
-      value = std::stoll(value_str);
-
-      if (key == _key) {
-        infile.close();
-        return value;  // Key found, return the associated value
-      } else if (key < _key) {
-        left = infile.tellg();  // Move right
-      } else {
-        right = mid - 1;  // Move left
-      }
+    if (key == _key) {
+      infile.close();
+      return value;  // Key found, return the associated value
+    } else if (key < _key) {
+      left = mid + 1;  // Move right
     } else {
-      // If the line is not formatted correctly, continue searching
-      // Issue link : https://github.com/kkli08/KV-Store/issues/43
-      right = mid - 1;
+      right = mid - 1;  // Move left
     }
   }
 
   infile.close();
   return -1;  // Key not found
 }
+
+
+// BINARY SEARCH
+// This function is not work since we store data in binary format
+// long long SSTIndex::SearchInSST(const std::string& filename, long long _key) {
+//   std::ifstream infile(path / filename);
+//   if (!infile.is_open()) {
+//     return -1;  // File doesn't exist
+//   }
+//
+//   infile.seekg(0, std::ios::end);
+//   std::streampos file_size = infile.tellg();
+//   if (file_size == 0) {
+//     infile.close();
+//     return -1;  // File is empty
+//   }
+//
+//   long long left = 0;
+//   long long right = file_size;
+//   long long key, value;
+//   std::string line;
+//
+//   while (left <= right) {
+//     // Calculate the midpoint
+//     long long mid = left + (right - left) / 2;
+//
+//     // Seek to the approximate midpoint in the file
+//     infile.seekg(mid, std::ios::beg);
+//
+//     // Move to the start of the next line if we are not at the beginning
+//     if (mid != 0) {
+//       infile.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+//     }
+//
+//     // Read the key-value pair at the current position
+//     if (!std::getline(infile, line)) {
+//       break;  // Reached the end of the file or error
+//     }
+//
+//     std::istringstream iss(line);
+//     std::string key_str, value_str;
+//     if (std::getline(iss, key_str, ',') && std::getline(iss, value_str)) {
+//       key = std::stoll(key_str);
+//       value = std::stoll(value_str);
+//
+//       if (key == _key) {
+//         infile.close();
+//         return value;  // Key found, return the associated value
+//       } else if (key < _key) {
+//         left = infile.tellg();  // Move right
+//       } else {
+//         right = mid - 1;  // Move left
+//       }
+//     } else {
+//       // Handle malformed lines (if any)
+//       infile.close();
+//       return -1;  // Invalid line format
+//     }
+//   }
+//
+//   infile.close();
+//   return -1;  // Key not found
+// }
+
 
 long long SSTIndex::Search(long long _key) {
   // Traverse the deque from the youngest (back) to the oldest (front)

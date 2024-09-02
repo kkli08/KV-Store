@@ -35,6 +35,8 @@ class Memtable {
       // helper function
       FlushSSTInfo* int_flush();
       string generateSstFilename();
+      string longLongToString(long long value);
+      long long stringToLongLong(const std::string &str);
 
     private:
       RedBlackTree* tree;
@@ -42,6 +44,7 @@ class Memtable {
       int current_size = 0;
       fs::path path;
       int SST_file_size = 0;
+
 
 };
 

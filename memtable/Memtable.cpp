@@ -90,13 +90,31 @@ FlushSSTInfo* Memtable::int_flush() {
     string filename = generateSstFilename();
     fs::path filepath = path / filename;
 
-    ofstream sst_file(filepath);
+    // Open the SST file in binary mode
+    ofstream sst_file(filepath, ios::binary);
+    if (!sst_file) {
+        cerr << "Failed to open SST file for writing: " << filepath << std::endl;
+        return nullptr;
+    }
+    // for (const auto& pair : kv_pairs) {
+    //     // convert into string type with exactly 8-byte-long
+    //     string line = longLongToString(pair.first)+", "+longLongToString(pair.second);
+    //     sst_file << line << "\n";
+    // }
     for (const auto& pair : kv_pairs) {
-        sst_file << pair.first << ", " << pair.second << "\n";
+        // Write the key and value directly as binary data
+        sst_file.write(reinterpret_cast<const char*>(&pair.first), sizeof(long long int));
+        sst_file.write(",", 1);  // Write a comma separator
+        sst_file.write(reinterpret_cast<const char*>(&pair.second), sizeof(long long int));
+        sst_file.write("\n", 1);  // Write a newline at the end of the line
     }
     sst_file.close();
 
-    FlushSSTInfo* info = new FlushSSTInfo{filename, kv_pairs.size() > 0 ? kv_pairs[0].first : 1, kv_pairs.size() > 0 ? kv_pairs[kv_pairs.size()-1].first : -1};
+    FlushSSTInfo* info = new FlushSSTInfo{
+        filename,
+        kv_pairs.size() > 0 ? kv_pairs[0].first : 1,
+        kv_pairs.size() > 0 ? kv_pairs[kv_pairs.size()-1].first : -1
+    };
     return info;
 }
 
@@ -106,4 +124,26 @@ string Memtable::generateSstFilename() {
     std::stringstream ss;
     ss << std::put_time(std::localtime(&in_time_t), "%Y_%m_%d_%H%M");
     return ss.str() + ".sst";
+}
+
+/*
+ * helper functions:
+ * string longLongToString(long long value)
+ *     --> convert LL int type to 8 byte string
+ * ll stringToLongLong(const std::string &str)
+ *     --> convert string into LL int type
+ */
+std::string Memtable::longLongToString(long long value) {
+    std::string result(sizeof(long long int), '\0');
+    std::memcpy(&result[0], &value, sizeof(long long int));
+    return result;
+}
+
+long long Memtable::stringToLongLong(const std::string &str) {
+    if (str.size() != sizeof(long long int)) {
+        throw std::invalid_argument("String size does not match long long int size");
+    }
+    long long value;
+    std::memcpy(&value, str.data(), sizeof(long long int));
+    return value;
 }

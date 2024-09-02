@@ -16,25 +16,42 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
+find_package(OpenSSL REQUIRED)
+include_directories(${OPENSSL_INCLUDE_DIR})
 enable_testing()
+#FetchContent_Declare(
+#        cryptopp
+#        URL https://github.com/weidai11/cryptopp/archive/refs/tags/CRYPTOPP_8_9_0.zip
+#)
+#FetchContent_MakeAvailable(cryptopp)
+#message(STATUS "Crypto++ source directory: ${cryptopp_SOURCE_DIR}")
+#
+## Include the Crypto++ headers
+#include_directories(${cryptopp_SOURCE_DIR})
+
+
 
 # Add the test executable
 add_executable(runTests
+#        TEST
         tests/binarytree_tests.cpp
         tests/redblacktree_unittest.cpp
         tests/api_unittest.cpp
         tests/memtable_unittest.cpp
         tests/sstIndex_unittest.cpp
+        tests/encryption_unittest.cpp
+#        SRC files
         tree/BinaryTree.cpp
         tree/TreeNode.cpp
         tree/RedBlackTree.cpp
         api/api.cpp
         memtable/Memtable.cpp
         SSTIndex/SSTIndex.cpp
+        AesEncryption/Encryption.h
 )
 
 # Link Google Test to the test executable
-target_link_libraries(runTests gtest gtest_main)
+target_link_libraries(runTests gtest gtest_main OpenSSL::Crypto)
 
 # Enable the tests to be run with `ctest`
 add_test(NAME runTests COMMAND runTests)
@@ -49,7 +66,7 @@ set(SOURCE
         tree/TreeNode.cpp
         tree/RedBlackTree.cpp
         SSTIndex/SSTIndex.cpp
-
+#        AesEncryption/AesEncryption.cpp
 )
 
 # Include directories (header files)
@@ -57,7 +74,11 @@ include_directories(${PROJECT_SOURCE_DIR}/api)
 include_directories(${PROJECT_SOURCE_DIR}/memtable)
 include_directories(${PROJECT_SOURCE_DIR}/tree)
 include_directories(${PROJECT_SOURCE_DIR}/SSTIndex)
+include_directories(${PROJECT_SOURCE_DIR}/AesEncryption)
 
 
 # Add the executable by specifying the source file(s)
 add_executable(main ${SOURCE})
+
+# Link your executable with Crypto++
+#target_link_libraries(main cryptopp-static)

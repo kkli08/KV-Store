@@ -217,20 +217,28 @@ TEST(MemtableTest, FlushSingleKeyValuePair) {
     EXPECT_TRUE(fs::exists(filepath));
 
     // Verify the content of the SST file
-    std::ifstream sst_file(filepath);
-    std::string line;
-    std::getline(sst_file, line);
-    EXPECT_EQ(line, "10, 100");
+    std::ifstream sst_file(filepath, std::ios::binary);
+    ASSERT_TRUE(sst_file.is_open());
+
+    long long int key, value;
+    char comma;
+    sst_file.read(reinterpret_cast<char*>(&key), sizeof(long long int));
+    sst_file.read(&comma, 1);  // Read the comma separator
+    sst_file.read(reinterpret_cast<char*>(&value), sizeof(long long int));
+
+    EXPECT_EQ(key, 10);
+    EXPECT_EQ(value, 100);
 
     sst_file.close();
     delete memtable;
     fs::remove_all("test_db");
 }
 
+
 /*
 * Flush Multiple Key-Value Pairs
 * This test checks that multiple key-value pairs are correctly flushed to the SST file in order.
- */
+*/
 TEST(MemtableTest, FlushMultipleKeyValuePairs) {
     Memtable* memtable = new Memtable();
     memtable->put(10, 100);
@@ -239,22 +247,39 @@ TEST(MemtableTest, FlushMultipleKeyValuePairs) {
     memtable->set_path("test_db");
 
     // Perform flush
-    memtable->int_flush();
+    FlushSSTInfo* info = memtable->int_flush();
 
     // Verify the SST file exists
-    std::string filename = memtable->generateSstFilename();
-    fs::path filepath = fs::path("test_db") / filename;
+    fs::path filepath = memtable->get_path() / info->fileName;
     EXPECT_TRUE(fs::exists(filepath));
 
     // Verify the content of the SST file
-    std::ifstream sst_file(filepath);
-    std::string line;
-    std::getline(sst_file, line);
-    EXPECT_EQ(line, "5, 50");
-    std::getline(sst_file, line);
-    EXPECT_EQ(line, "10, 100");
-    std::getline(sst_file, line);
-    EXPECT_EQ(line, "20, 200");
+    std::ifstream sst_file(filepath, std::ios::binary);
+    ASSERT_TRUE(sst_file.is_open());
+
+    long long key, value;
+    char comma, nextline;
+
+    sst_file.read(reinterpret_cast<char*>(&key), sizeof(long long int));
+    sst_file.read(&comma, 1);
+    sst_file.read(reinterpret_cast<char*>(&value), sizeof(long long int));
+    sst_file.read(&nextline, 1);
+    EXPECT_EQ(key, 5);
+    EXPECT_EQ(value, 50);
+
+    sst_file.read(reinterpret_cast<char*>(&key), sizeof(long long int));
+    sst_file.read(&comma, 1);
+    sst_file.read(reinterpret_cast<char*>(&value), sizeof(long long int));
+    sst_file.read(&nextline, 1);
+    EXPECT_EQ(key, 10);
+    EXPECT_EQ(value, 100);
+
+    sst_file.read(reinterpret_cast<char*>(&key), sizeof(long long int));
+    sst_file.read(&comma, 1);
+    sst_file.read(reinterpret_cast<char*>(&value), sizeof(long long int));
+    sst_file.read(&nextline, 1);
+    EXPECT_EQ(key, 20);
+    EXPECT_EQ(value, 200);
 
     sst_file.close();
     delete memtable;
@@ -264,23 +289,21 @@ TEST(MemtableTest, FlushMultipleKeyValuePairs) {
 /*
 * Flush Empty Memtable
 * This test checks that flushing an empty memtable results in an empty SST file.
- */
+*/
 TEST(MemtableTest, FlushEmptyMemtable) {
     Memtable* memtable = new Memtable();
     memtable->set_path("test_db");
 
     // Perform flush on an empty memtable
-    memtable->int_flush();
+    FlushSSTInfo* info = memtable->int_flush();
 
     // Verify the SST file exists
-    std::string filename = memtable->generateSstFilename();
-    fs::path filepath = fs::path("test_db") / filename;
+    fs::path filepath = memtable->get_path() / info->fileName;
     EXPECT_TRUE(fs::exists(filepath));
 
     // Verify the content of the SST file is empty
-    std::ifstream sst_file(filepath);
-    std::string line;
-    EXPECT_FALSE(std::getline(sst_file, line));  // No content should be present
+    std::ifstream sst_file(filepath, std::ios::binary);
+    EXPECT_TRUE(sst_file.peek() == std::ifstream::traits_type::eof());  // The file should be empty
 
     sst_file.close();
     delete memtable;
@@ -290,7 +313,7 @@ TEST(MemtableTest, FlushEmptyMemtable) {
 /*
 * Handle Large Number of Key-Value Pairs (1e3)
 * This test verifies that the flush handles a large number of key-value pairs efficiently.
- */
+*/
 TEST(MemtableTest, FlushLargeNumberOfKeyValuePairs) {
     Memtable* memtable = new Memtable();
     memtable->set_path("test_db");
@@ -301,25 +324,25 @@ TEST(MemtableTest, FlushLargeNumberOfKeyValuePairs) {
     }
 
     // Perform flush
-    memtable->int_flush();
+    FlushSSTInfo* info = memtable->int_flush();
 
     // Verify the SST file exists
-    std::string filename = memtable->generateSstFilename();
-    fs::path filepath = fs::path("test_db") / filename;
+    fs::path filepath = memtable->get_path() / info->fileName;
     EXPECT_TRUE(fs::exists(filepath));
 
     // Verify the content of the SST file
-    std::ifstream sst_file(filepath);
-    long long i = 1;
-    std::string line;
-    while (std::getline(sst_file, line)) {
-        std::stringstream ss(line);
-        long long key, value;
-        char comma;
-        ss >> key >> comma >> value;
+    std::ifstream sst_file(filepath, std::ios::binary);
+    ASSERT_TRUE(sst_file.is_open());
+
+    long long key, value;
+    char comma, nextline;
+    for (long long i = 1; i <= 1000; ++i) {
+        sst_file.read(reinterpret_cast<char*>(&key), sizeof(long long int));
+        sst_file.read(&comma, 1);
+        sst_file.read(reinterpret_cast<char*>(&value), sizeof(long long int));
+        sst_file.read(&nextline, 1);
         EXPECT_EQ(key, i);
         EXPECT_EQ(value, i * 10);
-        ++i;
     }
 
     sst_file.close();
@@ -330,7 +353,7 @@ TEST(MemtableTest, FlushLargeNumberOfKeyValuePairs) {
 /*
 * Check for Correct Overwrite Behavior
 * This test verifies that multiple flushes do not overwrite existing SST files.
- */
+*/
 TEST(MemtableTest, MultipleFlushesDoNotOverwrite) {
     Memtable* memtable = new Memtable();
     memtable->set_path("test_db");
@@ -355,7 +378,7 @@ TEST(MemtableTest, MultipleFlushesDoNotOverwrite) {
 /*
 * Verify Content Order in SST File
 * This test ensures that the content of the SST file is in the correct order (in-order traversal).
- */
+*/
 TEST(MemtableTest, VerifyContentOrderInSstFile) {
     Memtable* memtable = new Memtable();
     memtable->put(15, 150);
@@ -364,22 +387,39 @@ TEST(MemtableTest, VerifyContentOrderInSstFile) {
     memtable->set_path("test_db");
 
     // Perform flush
-    memtable->int_flush();
+    FlushSSTInfo* info = memtable->int_flush();
 
     // Verify the SST file exists
-    std::string filename = memtable->generateSstFilename();
-    fs::path filepath = fs::path("test_db") / filename;
+    fs::path filepath = memtable->get_path() / info->fileName;
     EXPECT_TRUE(fs::exists(filepath));
 
     // Verify the content order in the SST file
-    std::ifstream sst_file(filepath);
-    std::string line;
-    std::getline(sst_file, line);
-    EXPECT_EQ(line, "10, 100");
-    std::getline(sst_file, line);
-    EXPECT_EQ(line, "15, 150");
-    std::getline(sst_file, line);
-    EXPECT_EQ(line, "20, 200");
+    std::ifstream sst_file(filepath, std::ios::binary);
+    ASSERT_TRUE(sst_file.is_open());
+
+    long long key, value;
+    char comma, nextline;
+
+    sst_file.read(reinterpret_cast<char*>(&key), sizeof(long long int));
+    sst_file.read(&comma, 1);
+    sst_file.read(reinterpret_cast<char*>(&value), sizeof(long long int));
+    sst_file.read(&nextline, 1);
+    EXPECT_EQ(key, 10);
+    EXPECT_EQ(value, 100);
+
+    sst_file.read(reinterpret_cast<char*>(&key), sizeof(long long int));
+    sst_file.read(&comma, 1);
+    sst_file.read(reinterpret_cast<char*>(&value), sizeof(long long int));
+    sst_file.read(&nextline, 1);
+    EXPECT_EQ(key, 15);
+    EXPECT_EQ(value, 150);
+
+    sst_file.read(reinterpret_cast<char*>(&key), sizeof(long long int));
+    sst_file.read(&comma, 1);
+    sst_file.read(reinterpret_cast<char*>(&value), sizeof(long long int));
+    sst_file.read(&nextline, 1);
+    EXPECT_EQ(key, 20);
+    EXPECT_EQ(value, 200);
 
     sst_file.close();
     delete memtable;
