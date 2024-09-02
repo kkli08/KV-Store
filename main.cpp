@@ -16,13 +16,23 @@ int main(){
   MyDB->Put(1, 100);
   MyDB->Close();
 
-  // Memtable* memtable = new Memtable();
-  // fs::path path = fs::path("test_db");
-  // memtable->set_path(path);
-  // memtable->put(10, 100);
+  // const long long num_pairs = 1e4 + 10;  // 1 million key-value pairs
+  // // API* api = new API();
+  // std::string db_name = "test_db_performance_1M";
+
+  // // Ensure the directory exists before the test
+  // if (!fs::exists(db_name)) {
+  //   fs::create_directory(db_name);
+  // }
+
+  // // Open the database
+  // MyDB->Open(db_name);
   //
-  // // Perform flush and get the filename used
-  // std::string filename = memtable->int_flush();
+  // // Measure the time taken to put 1 million key-value pairs
+  // auto start_put = std::chrono::high_resolution_clock::now();
+  // for (long long i = 1; i <= num_pairs; ++i) {
+  //   MyDB->Put(i, i * 10);  // Inserting key i with value i*10
+  // }
 
   return 0;
 

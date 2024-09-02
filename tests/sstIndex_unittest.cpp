@@ -551,7 +551,7 @@ TEST(SSTIndexTest, LargeAmountOfDataWithMultipleSearches) {
     }
     outfile.close();
 
-    // Perform 50 searches
+    // Perform 1000 searches
     for (int i = 0; i < 1000; ++i) {
         // Randomly generate a key within the range
         // long long key_to_search = rand() % 1000 + 1;
@@ -575,6 +575,73 @@ TEST(SSTIndexTest, LargeAmountOfDataWithMultipleSearches) {
 
     // Edge case 5: Search for a key in the middle
     EXPECT_EQ(index->SearchInSST("large.sst", 500), 5000);
+
+    delete index;
+    fs::remove_all("test_db");
+}
+
+
+/*
+ * generate 100 sst files with each one contains 1000 kv pairs
+ */
+TEST(SSTIndexTest, SearchAcrossMultipleSSTFiles) {
+    SSTIndex* index = new SSTIndex();
+    index->set_path("test_db");
+
+    const int num_files = 100;      // Number of SST files
+    const int pairs_per_file = 1000; // Key-value pairs per SST file
+    const long long start_key = 1;  // Start key for the first SST file
+
+    // Create 100 SST files with 1,000 key-value pairs each
+    for (int file_num = 0; file_num < num_files; ++file_num) {
+        std::string filename = "sst_" + std::to_string(file_num) + ".sst";
+        std::ofstream outfile(fs::path("test_db") / filename, std::ios::binary);
+        if (!outfile.is_open()) {
+            throw std::runtime_error("Failed to open SST file for writing");
+        }
+
+        long long base_key = start_key + file_num * pairs_per_file;
+        for (long long i = 0; i < pairs_per_file; ++i) {
+            long long key = base_key + i;
+            long long value = key * 10;
+            outfile.write(reinterpret_cast<const char*>(&key), sizeof(long long));
+            outfile.write(",", 1);
+            outfile.write(reinterpret_cast<const char*>(&value), sizeof(long long));
+            outfile.write("\n", 1);
+        }
+        outfile.close();
+
+        // Add this SST file to the index
+        index->addSST(filename, base_key, base_key + pairs_per_file - 1);
+    }
+
+    // Perform searches across all files
+    for (int file_num = 0; file_num < num_files; ++file_num) {
+        long long base_key = start_key + file_num * pairs_per_file;
+        for (long long i = 0; i < pairs_per_file; ++i) {
+            long long key_to_search = base_key + i;
+            long long expected_value = key_to_search * 10;
+            long long value = index->Search(key_to_search);
+            EXPECT_EQ(value, expected_value);
+        }
+    }
+
+    // Edge case 1: Search for the smallest key
+    EXPECT_EQ(index->Search(start_key), start_key * 10);
+
+    // Edge case 2: Search for the largest key
+    EXPECT_EQ(index->Search(start_key + num_files * pairs_per_file - 1),
+              (start_key + num_files * pairs_per_file - 1) * 10);
+
+    // Edge case 3: Search for a non-existent key (lower than the smallest)
+    EXPECT_EQ(index->Search(start_key - 1), -1);
+
+    // Edge case 4: Search for a non-existent key (higher than the largest)
+    EXPECT_EQ(index->Search(start_key + num_files * pairs_per_file), -1);
+
+    // Edge case 5: Search for a key in the middle
+    long long middle_key = start_key + (num_files * pairs_per_file) / 2;
+    EXPECT_EQ(index->Search(middle_key), middle_key * 10);
 
     delete index;
     fs::remove_all("test_db");

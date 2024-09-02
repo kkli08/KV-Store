@@ -33,7 +33,8 @@ Memtable::~Memtable() {
     delete tree;
 }
 
-void Memtable::put(long long key, long long value) {
+FlushSSTInfo* Memtable::put(long long key, long long value) {
+    FlushSSTInfo* info = nullptr;
     if (current_size < memtable_size) {
         tree->insert(key, value);
         current_size++;
@@ -41,7 +42,7 @@ void Memtable::put(long long key, long long value) {
         // search() first to see if the value need to be updated
         if(!tree->search(key)) {
             // flush to disk and reset current_size to 0
-            flushToDisk();
+            info = flushToDisk();
             current_size = 0;
             // relocate memory for tree
             delete tree;
@@ -51,6 +52,7 @@ void Memtable::put(long long key, long long value) {
         tree->insert(key, value);
         current_size++;
     }
+    return info;
 }
 
 long long Memtable::get(long long key) {
@@ -118,13 +120,25 @@ FlushSSTInfo* Memtable::int_flush() {
     return info;
 }
 
-string Memtable::generateSstFilename() {
+std::string Memtable::generateSstFilename() {
+    // Get the current SST file size count
+    int sstId = getSSTFileSize();
+
+    // Generate the current timestamp
     auto now = std::chrono::system_clock::now();
     auto in_time_t = std::chrono::system_clock::to_time_t(now);
     std::stringstream ss;
     ss << std::put_time(std::localtime(&in_time_t), "%Y_%m_%d_%H%M");
-    return ss.str() + ".sst";
+
+    // Combine the SST file size and the timestamp to create the filename
+    std::string filename = std::to_string(sstId) + "_" + ss.str() + ".sst";
+
+    // Increase the SST file size count for the next filename
+    increaseSSTFileSize();
+
+    return filename;
 }
+
 
 /*
  * helper functions:

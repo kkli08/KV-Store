@@ -21,6 +21,7 @@ namespace kvdb {
         void Put(long long key, long long value);
         long long Get(long long key);
         Memtable* GetMemtable() const {return memtable;};
+        void IndexCheck();
 
     private:
         Memtable *memtable;

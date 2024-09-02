@@ -26,7 +26,7 @@ class Memtable {
       Memtable();
       Memtable(int threshold);
       ~Memtable();
-      void put(long long key, long long value);
+      FlushSSTInfo* put(long long key, long long value);
       long long get(long long key);
       void set_path(fs::path);
       fs::path get_path();
@@ -37,6 +37,10 @@ class Memtable {
       string generateSstFilename();
       string longLongToString(long long value);
       long long stringToLongLong(const std::string &str);
+      int get_memtableSize() {return memtable_size;};
+      int get_currentSize() {return current_size;};
+      int getSSTFileSize() {return SST_file_size;};
+      void increaseSSTFileSize() {SST_file_size++;};
 
     private:
       RedBlackTree* tree;

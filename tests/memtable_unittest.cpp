@@ -163,7 +163,7 @@ TEST(MemtableTest, GenerateSstFilenameBasic) {
     std::string filename = memtable->generateSstFilename();
 
     // Expected format: YYYY_MM_DD_HHMMSS.sst
-    std::regex pattern(R"(\d{4}_\d{2}_\d{2}_\d{4}\.sst)");
+    std::regex pattern(R"(\d{1}_\d{4}_\d{2}_\d{2}_\d{4}\.sst)");
     EXPECT_TRUE(std::regex_match(filename, pattern));
 
     delete memtable;
@@ -177,7 +177,7 @@ TEST(MemtableTest, GenerateSstFilenameConsecutiveCalls) {
     std::string filename2 = memtable->generateSstFilename();
 
     // The filenames should be different if the function is called at different times
-    EXPECT_EQ(filename1, filename2);
+    EXPECT_NE(filename1, filename2);
 
     delete memtable;
 }
@@ -188,7 +188,7 @@ TEST(MemtableTest, GenerateSstFilenameIncludesCurrentTime) {
     auto now = std::chrono::system_clock::now();
     auto in_time_t = std::chrono::system_clock::to_time_t(now);
     std::stringstream ss;
-    ss << std::put_time(std::localtime(&in_time_t), "%Y_%m_%d_%H%M");
+    ss << std::put_time(std::localtime(&in_time_t), "0_%Y_%m_%d_%H%M");
 
     std::string expected_prefix = ss.str();
     std::string filename = memtable->generateSstFilename();
@@ -369,7 +369,7 @@ TEST(MemtableTest, MultipleFlushesDoNotOverwrite) {
     for (const auto& entry : fs::directory_iterator("test_db")) {
         ++sst_file_count;
     }
-    EXPECT_EQ(sst_file_count, 1);
+    EXPECT_EQ(sst_file_count, 2);
 
     delete memtable;
     fs::remove_all("test_db");

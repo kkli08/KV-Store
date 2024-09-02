@@ -80,7 +80,23 @@ namespace kvdb {
     // check if db is open
     check_if_open();
 
-    memtable->put(key, value);
+    // The key should not be -1
+    if (key == -1) {
+      cerr << "Key should not be -1, try use other value as the key." << std::endl;
+      return;
+    }
+
+    FlushSSTInfo* info = memtable->put(key, value);
+
+    if (info != nullptr) {
+      // flush happens and safe access info attribute
+      if(info->largest_key >= info->smallest_key) {
+        // non-empty SST file
+        index->addSST(info->fileName, info->smallest_key, info->smallest_key);
+        cout << info->fileName << "'s smallest key: " << info->smallest_key << " and largest key: " << info->largest_key << endl;
+      }
+    }
+
   }
 
   long long API::Get(long long key) {
@@ -88,14 +104,25 @@ namespace kvdb {
     // check if db is open
     check_if_open();
 
+    long long value = memtable->get(key);
     // check memtable
-    if (memtable->get(key) != -1) {
-      return memtable->get(key);
+    if (value != -1) {
+      return value;
     }
 
     // check in SSTs.
-
+    value = index->Search(key);
+    if ( value != -1) {
+      return value;
+    }
 
     return -1;
+  }
+
+  void API::IndexCheck() {
+
+    for(auto& info : index->getSSTsIndex()) {
+      cout << info->filename << "'s smallest key: " << info->smallest_key << " and largest key: " << info->largest_key << endl;
+    }
   }
 }
