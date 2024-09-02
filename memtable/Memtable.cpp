@@ -11,6 +11,7 @@
 #include <filesystem> // c++17 features
 #include <sstream>
 #include <iostream>
+#include <cstring>
 
 using namespace std;
 namespace fs = std::filesystem;
@@ -149,7 +150,7 @@ std::string Memtable::generateSstFilename() {
  */
 std::string Memtable::longLongToString(long long value) {
     std::string result(sizeof(long long int), '\0');
-    std::memcpy(&result[0], &value, sizeof(long long int));
+    memcpy(&result[0], &value, sizeof(long long int));
     return result;
 }
 
@@ -158,6 +159,6 @@ long long Memtable::stringToLongLong(const std::string &str) {
         throw std::invalid_argument("String size does not match long long int size");
     }
     long long value;
-    std::memcpy(&value, str.data(), sizeof(long long int));
+    memcpy(&value, str.data(), sizeof(long long int));
     return value;
 }
