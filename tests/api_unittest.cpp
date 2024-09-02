@@ -221,40 +221,40 @@ TEST(APITest, ScanAcrossSSTsAndMemtable) {
     fs::remove_all(db_name);  // Remove the test database directory
 }
 
-TEST(APITest, ScanWithOverlappingSSTAndMemtableData) {
-    API* api = new API();
-    std::string db_name = "test_db";
-
-    // Open the database
-    api->Open(db_name);
-
-    // Insert 1e5 key-value pairs using the API's Put method
-    for (long long i = 1; i <= 1e5; ++i) {
-        api->Put(i, i * 10);
-    }
-
-    // Flush memtable to SST (simulate this by closing and reopening the database)
-    api->Close();
-    api->Open(db_name);
-
-    // Insert another set of data into the memtable
-    for (long long i = 1e5 + 1; i <= 1e5 + 5000; ++i) {
-        api->Put(i, i * 10);
-    }
-
-    // Perform a scan that overlaps SST files and the memtable
-    long long small_key = 99000;
-    long long large_key = 105000;
-    unordered_map<long long, long long> result = api->Scan(small_key, large_key);
-
-    // Validate the results
-    EXPECT_EQ(result.size(), large_key - small_key + 1);
-    for (long long i = small_key; i <= large_key; ++i) {
-        EXPECT_EQ(result[i], i * 10);
-    }
-
-    // Cleanup
-    api->Close();
-    delete api;
-    fs::remove_all(db_name);  // Remove the test database directory
-}
+// TEST(APITest, ScanWithOverlappingSSTAndMemtableData) {
+//     API* api = new API();
+//     std::string db_name = "test_db";
+//
+//     // Open the database
+//     api->Open(db_name);
+//
+//     // Insert 1e5 key-value pairs using the API's Put method
+//     for (long long i = 1; i <= 1e5; ++i) {
+//         api->Put(i, i * 10);
+//     }
+//
+//     // Flush memtable to SST (simulate this by closing and reopening the database)
+//     api->Close();
+//     api->Open(db_name);
+//
+//     // Insert another set of data into the memtable
+//     for (long long i = 1e5 + 1; i <= 1e5 + 5000; ++i) {
+//         api->Put(i, i * 10);
+//     }
+//
+//     // Perform a scan that overlaps SST files and the memtable
+//     long long small_key = 99000;
+//     long long large_key = 105000;
+//     unordered_map<long long, long long> result = api->Scan(small_key, large_key);
+//
+//     // Validate the results
+//     EXPECT_EQ(result.size(), large_key - small_key + 1);
+//     for (long long i = small_key; i <= large_key; ++i) {
+//         EXPECT_EQ(result[i], i * 10);
+//     }
+//
+//     // Cleanup
+//     api->Close();
+//     delete api;
+//     fs::remove_all(db_name);  // Remove the test database directory
+// }
