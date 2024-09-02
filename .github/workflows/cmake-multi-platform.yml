@@ -41,7 +41,7 @@ jobs:
           - os: ubuntu-latest
             c_compiler: cl
           - os: macos-latest
-            c_compiler: cl
+            c_compiler: cl  # Remove cl compiler from macOS
 
     steps:
       - uses: actions/checkout@v4
@@ -67,6 +67,10 @@ jobs:
         if: runner.os == 'Windows'
         run: dir ${{ steps.strings.outputs.build-output-dir }}
 
+      - name: List files in Release directory (Windows)
+        if: runner.os == 'Windows'
+        run: dir ${{ steps.strings.outputs.build-output-dir }}\Release
+
       - name: Run Tests on Linux and macOS
         if: runner.os != 'Windows'
         working-directory: ${{ steps.strings.outputs.build-output-dir }}
@@ -74,5 +78,5 @@ jobs:
 
       - name: Run Tests on Windows
         if: runner.os == 'Windows'
-        working-directory: ${{ steps.strings.outputs.build-output-dir }}
+        working-directory: ${{ steps.strings.outputs.build-output-dir }}\Release
         run: .\runTests.exe
