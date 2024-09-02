@@ -86,31 +86,7 @@ TEST(SSTIndexTest, FlushIndexToDisk) {
     delete index;
     fs::remove_all("test_db");
 }
-// TEST(SSTIndexTest, FlushIndexToDisk) {
-//     SSTIndex* index = new SSTIndex();
-//     index->set_path(fs::path("test_db"));
-//
-//     index->addSST("sst_1.sst", 10, 100);
-//     index->addSST("sst_2.sst", 200, 300);
-//
-//     // Flush to disk
-//     index->flushToDisk();
-//
-//     // // Verify the file exists and has correct content
-//     string filename = "Index.sst";
-//     std::ifstream infile(fs::path("test_db") / filename);
-//     ASSERT_TRUE(infile.is_open());
-//
-//     std::string line;
-//     std::getline(infile, line);
-//     EXPECT_EQ(line, "sst_1.sst 10 100");
-//     std::getline(infile, line);
-//     EXPECT_EQ(line, "sst_2.sst 200 300");
-//
-//     // infile.close();
-//     delete index;
-//     fs::remove_all("test_db");
-// }
+
 
 TEST(SSTIndexTest, RetrieveAllSSTsFromFile) {
     SSTIndex* index = new SSTIndex();

@@ -1,4 +1,6 @@
 ## KV-Store Database
+![Multi-Platform Unit Tests](https://github.com/kkli08/KV-Store/actions/workflows/cmake-multi-platform.yml/badge.svg)
+
 Stores key-value pairs and allows retrieval of a value based on its key.
 > 2024-08-28 Support <int, int> 
 ### Operations
