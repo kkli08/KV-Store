@@ -47,8 +47,8 @@ TBA
 ```c++
 TBA
 ```
+
 ### Benchmark
-## Performance Summary
 
 | Date       | Operation Type | Number of Pairs | Total Time Taken (ms) | Average Time per Operation (ms) |
 |------------|----------------|-----------------|-----------------------|---------------------------------|
