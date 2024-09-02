@@ -6,7 +6,11 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <unordered_map>
+#include <string>
 using namespace std;
+
+#define RECORDE_SIZE 18
 
 SSTIndex::SSTIndex() {
   path = fs::path("defaultDB");
@@ -159,7 +163,7 @@ long long SSTIndex::SearchInSST(const std::string& filename, long long _key) {
   }
 
   // Calculate the number of records in the file
-  const long long record_size = 18;  // 8 bytes (key) + 1 byte (comma) + 8 bytes (value) + 1 byte (newline)
+  const long long record_size = RECORDE_SIZE;  // 8 bytes (key) + 1 byte (comma) + 8 bytes (value) + 1 byte (newline)
   long long num_records = file_size / record_size;
 
   // Initialize binary search bounds
@@ -257,7 +261,7 @@ long long SSTIndex::SearchInSST(const std::string& filename, long long _key) {
 //   return -1;  // Key not found
 // }
 
-
+// search value for key
 long long SSTIndex::Search(long long _key) {
   // Traverse the deque from the youngest (back) to the oldest (front)
   for (auto it = index.rbegin(); it != index.rend(); ++it) {
@@ -274,5 +278,90 @@ long long SSTIndex::Search(long long _key) {
   }
   // Key was not found in any SST file
   return -1;
+}
+
+// scan in all SST files [from OLDEST to YOUNGEST]
+void SSTIndex::Scan(long long small_key, long long large_key, unordered_map<long long, long long>& res) {
+  // Traverse the deque from the oldest (front) to the youngest (back)
+  for (auto it = index.begin(); it != index.end(); ++it) {
+    SSTInfo* sst_info = *it;
+
+    // Check if the smallest key might be in this SST file based on the key range
+    if (sst_info->largest_key >= small_key && sst_info->smallest_key <= large_key) {
+      // Scan in this SST file
+      ScanInSST(small_key, large_key, sst_info->filename, res);
+    }
+  }
+}
+
+// scan kv-pairs inside sst file
+void SSTIndex::ScanInSST(long long small_key, long long large_key, const string& filename, unordered_map<long long, long long>& res) {
+  // binary search for finding the smallest key k with the range small_key <= k
+  // stop scanning until k > large_key
+
+  std::ifstream infile(path / filename, std::ios::binary);
+  if (!infile.is_open()) {
+    cerr << "SSTIndex::ScanInSST() : File doesn't exist" << endl; // File doesn't exist
+  }
+  // Determine the size of the file
+  infile.seekg(0, std::ios::end);
+  std::streampos file_size = infile.tellg();
+  if (file_size == 0) {
+    infile.close();
+    cerr << "SSTIndex::ScanInSST() : File is empty" << endl;  // File is empty
+  }
+
+  // Calculate the number of records in the file
+  const long long record_size = RECORDE_SIZE;  // 8 bytes (key) + 1 byte (comma) + 8 bytes (value) + 1 byte (newline)
+  long long num_records = file_size / record_size;
+
+  // Initialize binary search bounds
+  long long left = 0;
+  long long right = num_records - 1;
+  long long key = 0, value = 0;
+  long long start_pos = -1;
+
+  // Perform binary search to find the smallest key >= small_key
+  while (left <= right) {
+    long long mid = left + (right - left) / 2;
+
+    // Seek directly to the midpoint record
+    infile.seekg(mid * record_size, std::ios::beg);
+
+    // Read the key-value pair at the current position
+    infile.read(reinterpret_cast<char*>(&key), sizeof(long long));
+    infile.ignore(1);  // Ignore the comma
+    infile.read(reinterpret_cast<char*>(&value), sizeof(long long));
+    infile.ignore(1);  // Ignore the newline
+
+    if (key >= small_key) {
+      start_pos = mid;
+      right = mid - 1;  // Move left to find the smallest key >= small_key
+    } else {
+      left = mid + 1;  // Move right
+    }
+  }
+
+  if (start_pos == -1) {
+    infile.close();
+    return;  // No key >= small_key found
+  }
+
+  // Start scanning from the found position
+  infile.seekg(start_pos * record_size, std::ios::beg);
+  while (infile.read(reinterpret_cast<char*>(&key), sizeof(long long))) {
+    infile.ignore(1);  // Ignore the comma
+    infile.read(reinterpret_cast<char*>(&value), sizeof(long long));
+    infile.ignore(1);  // Ignore the newline
+
+    if (key > large_key) {
+      break;  // Stop scanning if the key is out of the specified range
+    }
+
+    // Add the key-value pair to the result map
+    res[key] = value;
+  }
+
+  infile.close();
 }
 

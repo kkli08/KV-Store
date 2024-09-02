@@ -10,8 +10,39 @@
 #include <stdexcept>
 #include <memory>
 #include <algorithm>
-
+#include <unordered_map>
+#include <string>
 namespace fs = std::filesystem;
+
+/*
+ * helper functions
+ */
+void createSSTFile(const fs::path& filepath, const std::vector<std::pair<long long, long long>>& kv_pairs) {
+    std::ofstream sst_file(filepath, std::ios::binary);
+    if (!sst_file.is_open()) {
+        throw std::runtime_error("Failed to create SST file: " + filepath.string());
+    }
+
+    for (const auto& pair : kv_pairs) {
+        sst_file.write(reinterpret_cast<const char*>(&pair.first), sizeof(long long));
+        sst_file.write(",", 1);
+        sst_file.write(reinterpret_cast<const char*>(&pair.second), sizeof(long long));
+        sst_file.write("\n", 1);
+    }
+
+    sst_file.close();
+}
+
+void deleteSSTFile(const fs::path& filepath) {
+    if (fs::exists(filepath)) {
+        fs::remove(filepath);
+    }
+}
+
+
+/*
+ * UNIT TEST
+ */
 
 TEST(SSTIndexTest, AddSingleSSTEntry) {
     SSTIndex* index = new SSTIndex();
@@ -342,30 +373,6 @@ TEST(SSTIndexTest, SearchInEmptySSTFile) {
  * Unit test for SSTIndex::Search(long long _key)
  *
  */
-
-void createSSTFile(const fs::path& filepath, const std::vector<std::pair<long long, long long>>& kv_pairs) {
-    std::ofstream sst_file(filepath, std::ios::binary);
-    if (!sst_file.is_open()) {
-        throw std::runtime_error("Failed to create SST file: " + filepath.string());
-    }
-
-    for (const auto& pair : kv_pairs) {
-        sst_file.write(reinterpret_cast<const char*>(&pair.first), sizeof(long long));
-        sst_file.write(",", 1);
-        sst_file.write(reinterpret_cast<const char*>(&pair.second), sizeof(long long));
-        sst_file.write("\n", 1);
-    }
-
-    sst_file.close();
-}
-
-
-void deleteSSTFile(const fs::path& filepath) {
-    if (fs::exists(filepath)) {
-        fs::remove(filepath);
-    }
-}
-
 // Test when SSTIndex is empty
 TEST(SSTIndexTest, SearchInEmptyIndex) {
     SSTIndex* sstIndex = new SSTIndex();
@@ -651,6 +658,167 @@ TEST(SSTIndexTest, SearchAcrossMultipleSSTFiles) {
     // Edge case 5: Search for a key in the middle
     long long middle_key = start_key + (num_files * pairs_per_file) / 2;
     EXPECT_EQ(index->Search(middle_key), middle_key * 10);
+
+    delete index;
+    fs::remove_all("test_db");
+}
+
+
+
+/*
+ * Unit Tests for SCAN
+ * --> void SSTIndex::ScanInSST(long long, long long, const string&, unordered_map<long long, long long>&);
+ * --> void SSTIndex::Scan(long long, long long, unordered_map<long long, long long>&);
+ */
+
+// Scan Within a Single SST File
+// This test checks if the ScanInSST method correctly scans a range of keys within a single SST file.
+TEST(SSTIndexTest, ScanWithinSingleSSTFile) {
+    SSTIndex* sstIndex = new SSTIndex();
+    sstIndex->set_path(fs::current_path());
+
+    fs::path sst1 = "sst1.sst";
+    createSSTFile(sst1, {{100, 1000}, {150, 1500}, {200, 2000}, {250, 2500}, {300, 3000}});
+
+    unordered_map<long long, long long> result;
+    sstIndex->ScanInSST(150, 250, "sst1.sst", result);
+
+    EXPECT_EQ(result.size(), 3);
+    EXPECT_EQ(result[150], 1500);
+    EXPECT_EQ(result[200], 2000);
+    EXPECT_EQ(result[250], 2500);
+
+    deleteSSTFile(sst1);
+    delete sstIndex;
+}
+
+// Scan Across Boundary in Single SST File
+// This test checks if the ScanInSST method correctly handles scans that start before the smallest key and end after the largest key.
+TEST(SSTIndexTest, ScanAcrossBoundarySingleSSTFile) {
+    SSTIndex* sstIndex = new SSTIndex();
+    sstIndex->set_path(fs::current_path());
+
+    fs::path sst1 = "sst1.sst";
+    createSSTFile(sst1, {{100, 1000}, {150, 1500}, {200, 2000}, {250, 2500}, {300, 3000}});
+
+    unordered_map<long long, long long> result;
+    sstIndex->ScanInSST(50, 350, "sst1.sst", result);
+
+    EXPECT_EQ(result.size(), 5);
+    EXPECT_EQ(result[100], 1000);
+    EXPECT_EQ(result[150], 1500);
+    EXPECT_EQ(result[200], 2000);
+    EXPECT_EQ(result[250], 2500);
+    EXPECT_EQ(result[300], 3000);
+
+    deleteSSTFile(sst1);
+    delete sstIndex;
+}
+
+TEST(SSTIndexTest, ScanNoMatchingKeys) {
+    SSTIndex* sstIndex = new SSTIndex();
+    sstIndex->set_path(fs::current_path());
+
+    fs::path sst1 = "sst1.sst";
+    createSSTFile(sst1, {{100, 1000}, {150, 1500}, {200, 2000}, {250, 2500}, {300, 3000}});
+
+    unordered_map<long long, long long> result;
+    sstIndex->ScanInSST(350, 400, "sst1.sst", result);
+
+    EXPECT_EQ(result.size(), 0);
+
+    deleteSSTFile(sst1);
+    delete sstIndex;
+}
+
+TEST(SSTIndexTest, ScanEdgeKeys) {
+    SSTIndex* sstIndex = new SSTIndex();
+    sstIndex->set_path(fs::current_path());
+
+    fs::path sst1 = "sst1.sst";
+    createSSTFile(sst1, {{100, 1000}, {150, 1500}, {200, 2000}, {250, 2500}, {300, 3000}});
+
+    unordered_map<long long, long long> result;
+    sstIndex->ScanInSST(100, 300, "sst1.sst", result);
+
+    EXPECT_EQ(result.size(), 5);
+    EXPECT_EQ(result[100], 1000);
+    EXPECT_EQ(result[150], 1500);
+    EXPECT_EQ(result[200], 2000);
+    EXPECT_EQ(result[250], 2500);
+    EXPECT_EQ(result[300], 3000);
+
+    deleteSSTFile(sst1);
+    delete sstIndex;
+}
+
+
+// 100 sst files with each contains 1k kv-pairs.
+TEST(SSTIndexTest, ScanAcrossMultipleSSTFiles) {
+    SSTIndex* index = new SSTIndex();
+    index->set_path("test_db");
+
+    const int num_files = 100;      // Number of SST files
+    const int pairs_per_file = 1000; // Key-value pairs per SST file
+    const long long start_key = 1;  // Start key for the first SST file
+
+    // Create 100 SST files with 1,000 key-value pairs each
+    for (int file_num = 0; file_num < num_files; ++file_num) {
+        std::string filename = "sst_" + std::to_string(file_num) + ".sst";
+        std::ofstream outfile(fs::path("test_db") / filename, std::ios::binary);
+        if (!outfile.is_open()) {
+            throw std::runtime_error("Failed to open SST file for writing");
+        }
+
+        long long base_key = start_key + file_num * pairs_per_file;
+        for (long long i = 0; i < pairs_per_file; ++i) {
+            long long key = base_key + i;
+            long long value = key * 10;
+            outfile.write(reinterpret_cast<const char*>(&key), sizeof(long long));
+            outfile.write(",", 1);
+            outfile.write(reinterpret_cast<const char*>(&value), sizeof(long long));
+            outfile.write("\n", 1);
+        }
+        outfile.close();
+
+        // Add this SST file to the index
+        index->addSST(filename, base_key, base_key + pairs_per_file - 1);
+    }
+
+    // Perform a scan across all files for a specific range of keys
+    unordered_map<long long, long long> result;
+    long long scan_start_key = 5000; // Start key for scanning
+    long long scan_end_key = 15000;  // End key for scanning
+    index->Scan(scan_start_key, scan_end_key, result);
+
+    // Validate the scan results
+    EXPECT_EQ(result.size(), scan_end_key - scan_start_key + 1);
+    for (long long i = scan_start_key; i <= scan_end_key; ++i) {
+        EXPECT_EQ(result[i], i * 10);
+    }
+
+    // Edge case 1: Scan the entire range of keys
+    unordered_map<long long, long long> full_scan_result;
+    index->Scan(start_key, start_key + num_files * pairs_per_file - 1, full_scan_result);
+    EXPECT_EQ(full_scan_result.size(), num_files * pairs_per_file);
+    for (long long i = start_key; i < start_key + num_files * pairs_per_file; ++i) {
+        EXPECT_EQ(full_scan_result[i], i * 10);
+    }
+
+    // Edge case 2: Scan a range with no keys
+    unordered_map<long long, long long> empty_scan_result;
+    index->Scan(start_key - 1000, start_key - 500, empty_scan_result);
+    EXPECT_EQ(empty_scan_result.size(), 0);
+
+    // Edge case 3: Scan a single SST file completely
+    unordered_map<long long, long long> single_file_scan_result;
+    long long single_file_start_key = start_key + 2000;
+    long long single_file_end_key = single_file_start_key + pairs_per_file - 1;
+    index->Scan(single_file_start_key, single_file_end_key, single_file_scan_result);
+    EXPECT_EQ(single_file_scan_result.size(), pairs_per_file);
+    for (long long i = single_file_start_key; i <= single_file_end_key; ++i) {
+        EXPECT_EQ(single_file_scan_result[i], i * 10);
+    }
 
     delete index;
     fs::remove_all("test_db");

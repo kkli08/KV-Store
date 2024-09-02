@@ -82,10 +82,11 @@ namespace kvdb {
     FlushSSTInfo* info = memtable->put(key, value);
 
     if (info != nullptr) {
-      // flush happens and safe access info attribute
       // Debug Purpose :-D
       // cout << "\n>>>>>> Ready for flushing" << endl;
       // cout << info->fileName << "'s smallest key: " << info->smallest_key << " and largest key: " << info->largest_key << endl;
+
+      // flush happens and safe access info attribute
       if(info->largest_key >= info->smallest_key) {
         // non-empty SST file
         index->addSST(info->fileName, info->smallest_key, info->largest_key);
