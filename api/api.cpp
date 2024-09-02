@@ -8,6 +8,11 @@
 
 namespace fs = std::filesystem;
 namespace kvdb {
+  /*
+   * void API::Open(string)
+   *
+   * Open db by name
+   */
   void API::Open(string db_name){
     std::cout << "Opening database " << db_name << std::endl;
 
@@ -33,6 +38,11 @@ namespace kvdb {
     index->getAllSSTs();
   }
 
+  /*
+   * void API::Close()
+   *
+   * Close and cleanup the database
+   */
   void API::Close(){
     check_if_open();
     std::cout << "Closing database " << std::endl;
@@ -53,42 +63,11 @@ namespace kvdb {
     cleanup();
   }
 
-  void API::cleanup() {
-    // Check if memtable is not null
-    if (memtable) {
-      delete memtable;  // Delete the dynamically allocated memtable
-      memtable = nullptr;  // Set pointer to nullptr to avoid dangling pointer
-    }
-    std::cout << "Cleanup completed." << std::endl;
-  }
-
-  API::~API() {
-    // Check if memtable is not null
-    if (memtable) {
-      delete memtable;  // Delete the dynamically allocated memtable
-      memtable = nullptr;  // Set pointer to nullptr to avoid dangling pointer
-    }
-  }
-  void API::set_path(fs::path _path) {
-    path = _path;
-    memtable->set_path(_path);
-    index->set_path(_path);
-
-    // Construct the full path to the "Index.sst" file
-    fs::path indexFilePath = path / "Index.sst";
-
-    // Check if the "Index.sst" file exists
-    if (!fs::exists(indexFilePath)) {
-      // If the file does not exist, create an empty "Index.sst" file
-      std::ofstream outfile(indexFilePath);
-      if (!outfile.is_open()) {
-        throw std::runtime_error("Failed to create Index.sst file at: " + indexFilePath.string());
-      }
-      outfile.close();  // Close the file after creation
-      std::cout << "Created new Index.sst file at: " << indexFilePath << std::endl;
-    }
-  }
-
+  /*
+   * void API::Put(LL, LL)
+   *
+   * Store key-value pair in kv database
+   */
   void API::Put(long long key, long long value) {
     // Put method
     // check if db is open
@@ -115,6 +94,12 @@ namespace kvdb {
 
   }
 
+  /*
+   * LL API::Get(LL)
+   *
+   * Return the value of a key, return -1 if the key
+   * doesn't exist in memtable or SSTs
+   */
   long long API::Get(long long key) {
     // Get method
     // check if db is open
@@ -135,6 +120,66 @@ namespace kvdb {
     return -1;
   }
 
+  // memory cleanup function
+  void API::cleanup() {
+    // Check if memtable is not null
+    if (memtable) {
+      delete memtable;  // Delete the dynamically allocated memtable
+      memtable = nullptr;  // Set pointer to nullptr to avoid dangling pointer
+    }
+    std::cout << "Cleanup completed." << std::endl;
+  }
+
+  /*
+   * unordered_map<LL, LL> API::Scan(LL, LL)
+   *
+   * Search the memtable and the SSTs.
+   * step 1:
+   *    scan the SSTs from oldest to youngest
+   * step 2:
+   *    scan the memtable
+   */
+  unordered_map<long long, long long> Scan(long long, long long) {
+    unordered_map<long long, long long> result;
+
+    // step 1:
+    // scan the SSTs from oldest to youngest
+
+    // step 2:
+    // scan the memtable
+
+    return result;
+  }
+
+  API::~API() {
+    // Check if memtable is not null
+    if (memtable) {
+      delete memtable;  // Delete the dynamically allocated memtable
+      memtable = nullptr;  // Set pointer to nullptr to avoid dangling pointer
+    }
+  }
+
+  // helper function
+  void API::set_path(fs::path _path) {
+    path = _path;
+    memtable->set_path(_path);
+    index->set_path(_path);
+
+    // Construct the full path to the "Index.sst" file
+    fs::path indexFilePath = path / "Index.sst";
+
+    // Check if the "Index.sst" file exists
+    if (!fs::exists(indexFilePath)) {
+      // If the file does not exist, create an empty "Index.sst" file
+      std::ofstream outfile(indexFilePath);
+      if (!outfile.is_open()) {
+        throw std::runtime_error("Failed to create Index.sst file at: " + indexFilePath.string());
+      }
+      outfile.close();  // Close the file after creation
+      std::cout << "Created new Index.sst file at: " << indexFilePath << std::endl;
+    }
+  }
+
   // Debug helper function
   void API::IndexCheck() {
     cout << "\n-->Inside API::IndexCheck()" << endl;
@@ -144,4 +189,6 @@ namespace kvdb {
     cout << "\n-->Inside Index.sst" << endl;
     index->printSSRsInFile();
   }
+
+
 }

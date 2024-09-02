@@ -37,7 +37,10 @@ MyDB->Close();
 **kvdb::API::Scan(int_64, int_64)**
 > Retrieves all KV-pairs in a key range in key order (key1 < key2)
 ```c++
-KV-pairs = Scan(Key1, Key2)
+auto MyDB = new kvdb::API();
+unordered_map<long long, long long> KvPairs;
+MyDB->Open("database name");
+KvPairs = MyDB->Scan(Key1, Key2);
 ```
 **kvdb::API::Update()**
 > Update the data.

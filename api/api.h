@@ -7,6 +7,7 @@
 #include <string>
 #include "Memtable.h"
 #include <filesystem> // C++17 lib
+#include <unordered_map>
 #include "SSTIndex.h"
 
 namespace fs = std::filesystem;
@@ -20,6 +21,7 @@ namespace kvdb {
         void Close();
         void Put(long long key, long long value);
         long long Get(long long key);
+        unordered_map<long long, long long> Scan(long long, long long);
         Memtable* GetMemtable() const {return memtable;};
         void IndexCheck();
 
