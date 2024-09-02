@@ -61,7 +61,7 @@ add_test(NAME runTests COMMAND runTests)
 set(SOURCE
     main.cpp
         api/api.cpp
-        memtable/memtable.cpp
+        memtable/Memtable.cpp
         tree/BinaryTree.cpp
         tree/TreeNode.cpp
         tree/RedBlackTree.cpp

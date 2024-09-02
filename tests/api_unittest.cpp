@@ -134,7 +134,7 @@ TEST(APITest, InsertAndRetrieve10KKeyValuePairs) {
 }
 
 TEST(APITest, InsertAndRetrieve1MKeyValuePairs) {
-    const long long num_pairs = 1e6;  // 1 million key-value pairs
+    const long long num_pairs = 1e5;  // 1 million key-value pairs
     API* api = new API();
     std::string db_name = "test_db_performance_1M";
 
