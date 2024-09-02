@@ -16,6 +16,18 @@ namespace kvdb {
   void API::Open(string db_name){
     std::cout << "Opening database " << db_name << std::endl;
 
+    if (is_open) {
+      throw runtime_error("Database is already open.");
+    }
+
+    // Allocate or reallocate memtable and index
+    if (!memtable) {
+      memtable = make_unique<Memtable>();
+    }
+    if (!index) {
+      index = make_unique<SSTIndex>();
+    }
+
     // c++17 new feature
     // Define the path to the database directory
     fs::path db_path = db_name;
@@ -60,7 +72,6 @@ namespace kvdb {
     is_open = false;
     // clean up memory
     delete info;
-    cleanup();
   }
 
   /*
@@ -121,15 +132,6 @@ namespace kvdb {
     return -1;
   }
 
-  // memory cleanup function
-  void API::cleanup() {
-    // Check if memtable is not null
-    if (memtable) {
-      delete memtable;  // Delete the dynamically allocated memtable
-      memtable = nullptr;  // Set pointer to nullptr to avoid dangling pointer
-    }
-    std::cout << "Cleanup completed." << std::endl;
-  }
 
   /*
    * unordered_map<LL, LL> API::Scan(LL, LL)
@@ -152,14 +154,6 @@ namespace kvdb {
     memtable->Scan(small_key, large_key, result);
 
     return result;
-  }
-
-  API::~API() {
-    // Check if memtable is not null
-    if (memtable) {
-      delete memtable;  // Delete the dynamically allocated memtable
-      memtable = nullptr;  // Set pointer to nullptr to avoid dangling pointer
-    }
   }
 
   // helper function

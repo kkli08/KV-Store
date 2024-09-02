@@ -9,32 +9,38 @@
 #include <filesystem> // C++17 lib
 #include <unordered_map>
 #include "SSTIndex.h"
+#include <memory>
 
 namespace fs = std::filesystem;
 using namespace std;
 namespace kvdb {
     class API {
     public:
-        API() : memtable_size(1e4), memtable(new Memtable()), index(new SSTIndex()) {};
-        ~API();
+        API()
+                    : memtable_size(1e4),
+                      memtable(make_unique<Memtable>()),
+                      index(make_unique<SSTIndex>())
+        {};
+
+        ~API() = default;
         void Open(string db_name);
         void Close();
         void Put(long long key, long long value);
         long long Get(long long key);
         unordered_map<long long, long long> Scan(long long small_key, long long large_key);
-        Memtable* GetMemtable() const {return memtable;};
+        Memtable* GetMemtable() const {return memtable.get();};
         void IndexCheck();
 
     private:
-        Memtable *memtable;
-        SSTIndex *index;
+        unique_ptr<Memtable> memtable;
+        unique_ptr<SSTIndex> index;
+
         int memtable_size;
         fs::path path; // path for store SSTs
-        bool is_open;
+        bool is_open = false;
         // helper function: set memtable_size
         void set_memtable_size(int _size);
         void set_path(fs::path);
-        void cleanup();
         void check_if_open() const {
             if (!is_open) {
                 throw runtime_error("Database is not open. Please open the database before performing operations.");
