@@ -40,7 +40,8 @@ jobs:
             c_compiler: clang
           - os: ubuntu-latest
             c_compiler: cl
-
+          - os: macos-latest
+            c_compiler: cl
 
     steps:
       - uses: actions/checkout@v4
@@ -61,6 +62,10 @@ jobs:
 
       - name: Build
         run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+
+      - name: List files in build directory (Windows)
+        if: runner.os == 'Windows'
+        run: dir ${{ steps.strings.outputs.build-output-dir }}
 
       - name: Run Tests on Linux and macOS
         if: runner.os != 'Windows'
