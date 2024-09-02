@@ -140,6 +140,10 @@ std::string Memtable::generateSstFilename() {
     return filename;
 }
 
+// scan the tree and insert the kv-pairs<k,v> into res where small_key <= k && k <= large_key
+void Memtable::Scan(long long small_key, long long large_key, unordered_map<long long, long long>& res) {
+    tree->Scan(tree->getRoot(), small_key, large_key, res);
+}
 
 /*
  * helper functions:

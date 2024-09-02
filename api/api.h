@@ -21,7 +21,7 @@ namespace kvdb {
         void Close();
         void Put(long long key, long long value);
         long long Get(long long key);
-        unordered_map<long long, long long> Scan(long long, long long);
+        unordered_map<long long, long long> Scan(long long small_key, long long large_key);
         Memtable* GetMemtable() const {return memtable;};
         void IndexCheck();
 

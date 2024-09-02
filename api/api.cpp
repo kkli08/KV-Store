@@ -140,14 +140,16 @@ namespace kvdb {
    * step 2:
    *    scan the memtable
    */
-  unordered_map<long long, long long> Scan(long long, long long) {
+  unordered_map<long long, long long> API::Scan(long long small_key, long long large_key) {
     unordered_map<long long, long long> result;
 
     // step 1:
     // scan the SSTs from oldest to youngest
+    index->Scan(small_key, large_key, result);
 
     // step 2:
     // scan the memtable
+    memtable->Scan(small_key, large_key, result);
 
     return result;
   }
@@ -174,10 +176,18 @@ namespace kvdb {
       // If the file does not exist, create an empty "Index.sst" file
       std::ofstream outfile(indexFilePath);
       if (!outfile.is_open()) {
-        throw std::runtime_error("Failed to create Index.sst file at: " + indexFilePath.string());
+        throw std::runtime_error("API::set_path()-->> Failed to create Index.sst file at: " + indexFilePath.string());
       }
       outfile.close();  // Close the file after creation
-      std::cout << "Created new Index.sst file at: " << indexFilePath << std::endl;
+      std::cout << "API::set_path()-->> Created new Index.sst file at: " << indexFilePath << std::endl;
+    } else {
+      std::ofstream outfile(indexFilePath);
+      if (outfile.is_open()) {
+        cout << "API::set_path()-->> Existing Index.sst file at: " << indexFilePath << endl;
+      } else {
+        std::cerr << "API::set_path()-->> Failed to open existed Index.sst file at: " << indexFilePath << std::endl;
+      }
+      outfile.close();
     }
   }
 

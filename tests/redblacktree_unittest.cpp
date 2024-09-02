@@ -240,3 +240,43 @@ TEST(RedBlackTreeTest, InOrderFlushDuplicateKeys) {
 
     delete rbt;
 }
+
+TEST(RedBlackTreeTest, ScanWithinRange) {
+    RedBlackTree* rbtree = new RedBlackTree();
+    rbtree->insert(10, 100);
+    rbtree->insert(20, 200);
+    rbtree->insert(30, 300);
+    rbtree->insert(40, 400);
+    rbtree->insert(50, 500);
+
+    unordered_map<long long, long long> result;
+    rbtree->Scan(rbtree->getRoot(), 20, 40, result);
+
+    EXPECT_EQ(result.size(), 3);
+    EXPECT_EQ(result[20], 200);
+    EXPECT_EQ(result[30], 300);
+    EXPECT_EQ(result[40], 400);
+
+    delete rbtree;
+}
+
+TEST(RedBlackTreeTest, ScanEntireRange) {
+    RedBlackTree* rbtree = new RedBlackTree();
+    rbtree->insert(10, 100);
+    rbtree->insert(20, 200);
+    rbtree->insert(30, 300);
+    rbtree->insert(40, 400);
+    rbtree->insert(50, 500);
+
+    unordered_map<long long, long long> result;
+    rbtree->Scan(rbtree->getRoot(), 10, 50, result);
+
+    EXPECT_EQ(result.size(), 5);
+    EXPECT_EQ(result[10], 100);
+    EXPECT_EQ(result[20], 200);
+    EXPECT_EQ(result[30], 300);
+    EXPECT_EQ(result[40], 400);
+    EXPECT_EQ(result[50], 500);
+
+    delete rbtree;
+}

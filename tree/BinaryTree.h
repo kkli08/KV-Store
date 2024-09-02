@@ -5,7 +5,9 @@
 #ifndef BINARYTREE_H
 #define BINARYTREE_H
 #include "TreeNode.h"
+#include <unordered_map>
 
+using namespace std;
 class BinaryTree {
     public:
         BinaryTree();
@@ -18,6 +20,7 @@ class BinaryTree {
         virtual void inorderTraversal();
         void preorderTraversal();
         void postorderTraversal();
+        void Scan(TreeNode*, long long small_key, long long large_key, unordered_map<long long, long long>& res);
 
     protected:
         TreeNode *root;

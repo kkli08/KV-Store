@@ -426,3 +426,58 @@ TEST(MemtableTest, VerifyContentOrderInSstFile) {
     fs::remove_all("test_db");
 }
 
+TEST(MemtableTest, ScanWithinRange) {
+    Memtable* memtable = new Memtable();
+    memtable->put(10, 100);
+    memtable->put(20, 200);
+    memtable->put(30, 300);
+    memtable->put(40, 400);
+    memtable->put(50, 500);
+
+    unordered_map<long long, long long> result;
+    memtable->Scan(20, 40, result);
+
+    EXPECT_EQ(result.size(), 3);
+    EXPECT_EQ(result[20], 200);
+    EXPECT_EQ(result[30], 300);
+    EXPECT_EQ(result[40], 400);
+
+    delete memtable;
+}
+
+TEST(MemtableTest, ScanEntireRange) {
+    Memtable* memtable = new Memtable();
+    memtable->put(10, 100);
+    memtable->put(20, 200);
+    memtable->put(30, 300);
+    memtable->put(40, 400);
+    memtable->put(50, 500);
+
+    unordered_map<long long, long long> result;
+    memtable->Scan(10, 50, result);
+
+    EXPECT_EQ(result.size(), 5);
+    EXPECT_EQ(result[10], 100);
+    EXPECT_EQ(result[20], 200);
+    EXPECT_EQ(result[30], 300);
+    EXPECT_EQ(result[40], 400);
+    EXPECT_EQ(result[50], 500);
+
+    delete memtable;
+}
+
+TEST(MemtableTest, ScanNoMatchingKeys) {
+    Memtable* memtable = new Memtable();
+    memtable->put(10, 100);
+    memtable->put(20, 200);
+    memtable->put(30, 300);
+    memtable->put(40, 400);
+    memtable->put(50, 500);
+
+    unordered_map<long long, long long> result;
+    memtable->Scan(60, 80, result);
+
+    EXPECT_EQ(result.size(), 0);
+
+    delete memtable;
+}

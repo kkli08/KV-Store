@@ -98,3 +98,23 @@ void BinaryTree::postorderTraversal(TreeNode* node) {
     }
 }
 
+
+
+void BinaryTree::Scan(TreeNode* node, long long small_key, long long large_key, unordered_map<long long, long long>& res) {
+    // Inorder scanning
+    if (!node) return;
+    // Prune left subtree if the current node's key is greater than the small_key
+    if (node->key > small_key) {
+        Scan(node->left, small_key, large_key, res);
+    }
+
+    // If the current node's key is within the range, add it to the result map
+    if (node->key >= small_key && node->key <= large_key) {
+        res[node->key] = node->value;
+    }
+
+    // Prune right subtree if the current node's key is less than the large_key
+    if (node->key < large_key) {
+        Scan(node->right, small_key, large_key, res);
+    }
+}

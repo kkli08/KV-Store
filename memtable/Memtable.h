@@ -8,6 +8,7 @@
 #include <cstddef>
 #include "RedBlackTree.h"
 #include <filesystem> // C++17 lib
+#include <unordered_map>
 
 namespace fs = std::filesystem;
 using namespace std;
@@ -31,6 +32,7 @@ class Memtable {
       void set_path(fs::path);
       fs::path get_path();
       FlushSSTInfo* flushToDisk();
+      void Scan(long long small_key, long long large_key, unordered_map<long long, long long>& res);
 
       // helper function
       FlushSSTInfo* int_flush();

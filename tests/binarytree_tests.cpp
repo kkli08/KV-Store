@@ -66,3 +66,43 @@ TEST(BinaryTreeTest, PostorderTraversal) {
 
     delete tree;  // Clean up memory
 }
+
+TEST(BinaryTreeTest, ScanWithinRange) {
+    BinaryTree* tree = new BinaryTree();
+    tree->insert(10, 100);
+    tree->insert(20, 200);
+    tree->insert(30, 300);
+    tree->insert(40, 400);
+    tree->insert(50, 500);
+
+    unordered_map<long long, long long> result;
+    tree->Scan(tree->getRoot(), 20, 40, result);
+
+    EXPECT_EQ(result.size(), 3);
+    EXPECT_EQ(result[20], 200);
+    EXPECT_EQ(result[30], 300);
+    EXPECT_EQ(result[40], 400);
+
+    delete tree;
+}
+
+TEST(BinaryTreeTest, ScanEntireRange) {
+    BinaryTree* tree = new BinaryTree();
+    tree->insert(10, 100);
+    tree->insert(20, 200);
+    tree->insert(30, 300);
+    tree->insert(40, 400);
+    tree->insert(50, 500);
+
+    unordered_map<long long, long long> result;
+    tree->Scan(tree->getRoot(), 10, 50, result);
+
+    EXPECT_EQ(result.size(), 5);
+    EXPECT_EQ(result[10], 100);
+    EXPECT_EQ(result[20], 200);
+    EXPECT_EQ(result[30], 300);
+    EXPECT_EQ(result[40], 400);
+    EXPECT_EQ(result[50], 500);
+
+    delete tree;
+}
