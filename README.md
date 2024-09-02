@@ -57,3 +57,12 @@ TBA
 | 2024-09-02 | Put            | 1M              | 369                   | N/A                             |
 | 2024-09-02 | Get            | 1M              | 30529                 | 0.030529                        |
 
+### Supported Platforms and Compilers
+| Platform      | Compiler       | Status |
+|---------------|----------------|--|
+| Ubuntu 20.04  | GCC            | ✅ |
+| Ubuntu 20.04  | Clang          | ✅ |
+| Windows       | MSVC (cl)      | ✅ |
+| macOS         | Clang          | ✅ |
+| macOS         | GCC            | ✅ |
+
