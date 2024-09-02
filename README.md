@@ -47,3 +47,11 @@ TBA
 ```c++
 TBA
 ```
+### Benchmark
+## Performance Summary
+
+| Date       | Operation Type | Number of Pairs | Total Time Taken (ms) | Average Time per Operation (ms) |
+|------------|----------------|-----------------|-----------------------|---------------------------------|
+| 2024-09-02 | Put            | 1M              | 369                   | N/A                             |
+| 2024-09-02 | Get            | 1M              | 30529                 | 0.030529                        |
+

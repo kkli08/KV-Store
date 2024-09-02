@@ -5,6 +5,7 @@
 #include "SSTIndex.h"
 #include <fstream>
 #include <sstream>
+#include <iostream>
 using namespace std;
 
 SSTIndex::SSTIndex() {
@@ -50,6 +51,50 @@ void SSTIndex::getAllSSTs(){
   infile.close();
 }
 
+
+void SSTIndex::printSSRsInFile() {
+  // Construct the full path to the "Index.sst" file
+  fs::path indexFilePath = path / "Index.sst";
+
+  // Check if the directory exists
+  if (!fs::exists(path)) {
+    std::cerr << "Directory does not exist: " << path << std::endl;
+    return;
+  }
+
+  // Check if the file exists
+  if (!fs::exists(indexFilePath)) {
+    std::cerr << "File does not exist: " << indexFilePath << std::endl;
+    return;
+  }
+
+  // Check if the file exists and open it
+  std::ifstream infile(indexFilePath);
+  if (!infile.is_open()) {
+    std::cerr << "Failed to open file: " << indexFilePath << std::endl;
+    return;
+  }
+
+  // Check if the file is empty
+  infile.seekg(0, std::ios::end);
+  if (infile.tellg() == 0) {
+    std::cout << "The file is empty." << std::endl;
+    infile.close();
+    return;
+  }
+
+  // Reset the file pointer to the beginning
+  infile.seekg(0, std::ios::beg);
+
+  // Read and print each line in the file
+  std::string line;
+  while (std::getline(infile, line)) {
+    std::cout << line << std::endl;
+  }
+
+  infile.close();
+}
+
 // flush index info into "Index.sst"
 void SSTIndex::flushToDisk() {
   // Attempt to open (or create) the file "Index.sst"
@@ -74,6 +119,17 @@ void SSTIndex::flushToDisk() {
 void SSTIndex::addSST(const string& filename, long long smallest_key, long long largest_key){
   SSTInfo* info = new SSTInfo{filename, smallest_key, largest_key};
   index.push_back(info);
+
+  // Debug Purpose :-D
+  // if (!index.empty()) {
+  //   SSTInfo* info = index.back();
+  //   cout << "\n-->Inside SSTIndex::addSST()" << endl;
+  //   std::cout << info->filename << "'s smallest key: "
+  //             << info->smallest_key << " and largest key: "
+  //             << info->largest_key << std::endl;
+  // } else {
+  //   std::cout << "The deque is empty, no elements to print." << std::endl;
+  // }
 }
 
 void SSTIndex::set_path(fs::path _path) {

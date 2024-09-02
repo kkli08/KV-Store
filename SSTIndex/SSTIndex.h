@@ -36,6 +36,7 @@ class SSTIndex {
   long long Search(long long);
   // helper function
   void set_path(fs::path);
+  void printSSRsInFile();
 
 private:
   deque<SSTInfo*> index;

@@ -73,6 +73,20 @@ namespace kvdb {
     path = _path;
     memtable->set_path(_path);
     index->set_path(_path);
+
+    // Construct the full path to the "Index.sst" file
+    fs::path indexFilePath = path / "Index.sst";
+
+    // Check if the "Index.sst" file exists
+    if (!fs::exists(indexFilePath)) {
+      // If the file does not exist, create an empty "Index.sst" file
+      std::ofstream outfile(indexFilePath);
+      if (!outfile.is_open()) {
+        throw std::runtime_error("Failed to create Index.sst file at: " + indexFilePath.string());
+      }
+      outfile.close();  // Close the file after creation
+      std::cout << "Created new Index.sst file at: " << indexFilePath << std::endl;
+    }
   }
 
   void API::Put(long long key, long long value) {
@@ -90,10 +104,12 @@ namespace kvdb {
 
     if (info != nullptr) {
       // flush happens and safe access info attribute
+      // Debug Purpose :-D
+      // cout << "\n>>>>>> Ready for flushing" << endl;
+      // cout << info->fileName << "'s smallest key: " << info->smallest_key << " and largest key: " << info->largest_key << endl;
       if(info->largest_key >= info->smallest_key) {
         // non-empty SST file
-        index->addSST(info->fileName, info->smallest_key, info->smallest_key);
-        cout << info->fileName << "'s smallest key: " << info->smallest_key << " and largest key: " << info->largest_key << endl;
+        index->addSST(info->fileName, info->smallest_key, info->largest_key);
       }
     }
 
@@ -119,10 +135,13 @@ namespace kvdb {
     return -1;
   }
 
+  // Debug helper function
   void API::IndexCheck() {
-
+    cout << "\n-->Inside API::IndexCheck()" << endl;
     for(auto& info : index->getSSTsIndex()) {
       cout << info->filename << "'s smallest key: " << info->smallest_key << " and largest key: " << info->largest_key << endl;
     }
+    cout << "\n-->Inside Index.sst" << endl;
+    index->printSSRsInFile();
   }
 }

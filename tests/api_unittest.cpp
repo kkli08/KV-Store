@@ -134,7 +134,7 @@ TEST(APITest, InsertAndRetrieve10KKeyValuePairs) {
 }
 
 TEST(APITest, InsertAndRetrieve1MKeyValuePairs) {
-    const long long num_pairs = 2e5;  // 1 million key-value pairs
+    const long long num_pairs = 1e6;  // 1 million key-value pairs
     API* api = new API();
     std::string db_name = "test_db_performance_1M";
 
@@ -151,13 +151,14 @@ TEST(APITest, InsertAndRetrieve1MKeyValuePairs) {
     for (long long i = 1; i <= num_pairs; ++i) {
         api->Put(i, i * 10);  // Inserting key i with value i*10
     }
-    cout << endl << "Perform Index Check: " << endl;
-    api->IndexCheck();
+
+    // Debug
+    // api->IndexCheck();
 
     auto end_put = std::chrono::high_resolution_clock::now();
     auto put_duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_put - start_put).count();
 
-    int failures = 0;
+    // int failures = 0;
     std::cout << "Total time taken for Put operations (1M pairs): " << put_duration << " ms" << std::endl;
 
     // Measure the time taken to get 1 million key-value pairs
@@ -167,8 +168,8 @@ TEST(APITest, InsertAndRetrieve1MKeyValuePairs) {
         long long value = api->Get(i);
         if (value != i * 10) {
             all_values_correct = false;
-            failures++;
-            // break;
+            // failures++;
+            break;
         }
     }
     auto end_get = std::chrono::high_resolution_clock::now();
@@ -177,7 +178,7 @@ TEST(APITest, InsertAndRetrieve1MKeyValuePairs) {
 
     std::cout << "Total time taken for Get operations (1M pairs): " << get_duration << " ms" << std::endl;
     std::cout << "Average time per Get operation: " << avg_get_time_per_search << " ms" << std::endl;
-    std::cout << "Failures: " << failures << std::endl;
+    // std::cout << "Failures: " << failures << std::endl;
     // Verify all values were retrieved correctly
     EXPECT_TRUE(all_values_correct);
 
