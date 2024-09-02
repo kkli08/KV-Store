@@ -9,13 +9,7 @@
 #include <deque>
 #include <stdexcept>
 #include <memory>
-
-namespace fs = std::filesystem;
-
-
-#include <gtest/gtest.h>
-#include "SSTIndex.h"
-#include <filesystem>
+#include <algorithm>
 
 namespace fs = std::filesystem;
 
@@ -53,6 +47,14 @@ TEST(SSTIndexTest, AddMultipleSSTEntries) {
     fs::remove_all("test_db");
 }
 
+
+// Helper function to remove carriage returns (for Windows)
+std::string normalize_line_endings(const std::string& str) {
+    std::string result = str;
+    result.erase(std::remove(result.begin(), result.end(), '\r'), result.end());
+    return result;
+}
+
 TEST(SSTIndexTest, FlushIndexToDisk) {
     SSTIndex* index = new SSTIndex();
     index->set_path(fs::path("test_db"));
@@ -63,21 +65,52 @@ TEST(SSTIndexTest, FlushIndexToDisk) {
     // Flush to disk
     index->flushToDisk();
 
-    // // Verify the file exists and has correct content
-    string filename = "Index.sst";
+    // Verify the file exists and has correct content
+    std::string filename = "Index.sst";
     std::ifstream infile(fs::path("test_db") / filename);
     ASSERT_TRUE(infile.is_open());
 
     std::string line;
+
+    // Read the first line and normalize the line endings
     std::getline(infile, line);
+    line = normalize_line_endings(line);
     EXPECT_EQ(line, "sst_1.sst 10 100");
+
+    // Read the second line and normalize the line endings
     std::getline(infile, line);
+    line = normalize_line_endings(line);
     EXPECT_EQ(line, "sst_2.sst 200 300");
 
-    // infile.close();
+    infile.close();
     delete index;
     fs::remove_all("test_db");
 }
+// TEST(SSTIndexTest, FlushIndexToDisk) {
+//     SSTIndex* index = new SSTIndex();
+//     index->set_path(fs::path("test_db"));
+//
+//     index->addSST("sst_1.sst", 10, 100);
+//     index->addSST("sst_2.sst", 200, 300);
+//
+//     // Flush to disk
+//     index->flushToDisk();
+//
+//     // // Verify the file exists and has correct content
+//     string filename = "Index.sst";
+//     std::ifstream infile(fs::path("test_db") / filename);
+//     ASSERT_TRUE(infile.is_open());
+//
+//     std::string line;
+//     std::getline(infile, line);
+//     EXPECT_EQ(line, "sst_1.sst 10 100");
+//     std::getline(infile, line);
+//     EXPECT_EQ(line, "sst_2.sst 200 300");
+//
+//     // infile.close();
+//     delete index;
+//     fs::remove_all("test_db");
+// }
 
 TEST(SSTIndexTest, RetrieveAllSSTsFromFile) {
     SSTIndex* index = new SSTIndex();
