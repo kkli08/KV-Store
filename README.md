@@ -70,3 +70,7 @@ TBA
 | macOS         | Clang          | ✅ |
 | macOS         | GCC            | ✅ |
 
+### UML
+> 2024-09-02 
+> 
+![UML](/img/kvdb_s1_uml.jpg)
