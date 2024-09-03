@@ -7,8 +7,19 @@ Stores key-value pairs and allows retrieval of a value based on its key.
 **kvdb::API::Open(string db_name)**
 > Initializes the database system for all database files, including SSTs and other related data.
 ```c++
-auto MyDB = new kvdb::API();
-MyDB->Open("database name");
+// default memtable size = 1e4
+auto MyDBDefault = new kvdb::API();
+MyDB_default->Open("database name");
+
+// set memtable size
+int memtableSize = 1e3;
+auto MyDBSetMemtableSize = new kvdb::API(memtableSize);
+MyDBSetMemtableSize->Open("database name");
+
+// smart pointer
+int memtableSize = 1e3;
+auto MyDBSetMemtableSize = std::make_unique<kvdb::API>(memtableSize);
+MyDBSetMemtableSize->Open("database name");
 ```
 **kvdb::API::Put(int_64 key, int_64 value)**
 > Put key-value pair into the database.

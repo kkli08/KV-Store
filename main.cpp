@@ -11,7 +11,7 @@
 
 using namespace std;
 int main(){
-  auto MyDB = new kvdb::API();
+  auto MyDB = new kvdb::API(1e3);
   MyDB->Open("my_database");
   MyDB->Put(1, 100);
   MyDB->Close();
