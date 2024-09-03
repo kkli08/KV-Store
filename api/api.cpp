@@ -195,9 +195,5 @@ namespace kvdb {
     index->printSSRsInFile();
   }
 
-  // // set memtable size to memtable_size
-  // void API::set_memtable_size(int memtable_size) {
-  //   memtable->
-  // }
 
 }
