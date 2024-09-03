@@ -269,3 +269,56 @@ TEST(APITest, ScanWithOverlappingSSTAndMemtableData) {
     delete api;
     fs::remove_all(db_name);  // Remove the test database directory
 }
+
+TEST(APITest, BenchmarkScanWith1BillionPairs) {
+    const long long num_pairs = 1e7;  // 10 million key-value pairs
+    const long long scan_range = 1e6; // Scan range of 1 million keys
+    const long long scan_start_key = num_pairs / 2 - scan_range / 2; // Start scanning from the middle of the dataset
+    const long long scan_end_key = scan_start_key + scan_range - 1;
+
+    API* api = new API();
+    std::string db_name = "test_db_benchmark_scan";
+
+    // Ensure the directory exists before the test
+    if (!fs::exists(db_name)) {
+        fs::create_directory(db_name);
+    }
+
+    // Open the database
+    api->Open(db_name);
+
+    // Measure the time taken to put 1 billion key-value pairs
+    auto start_put = std::chrono::high_resolution_clock::now();
+    for (long long i = 1; i <= num_pairs; ++i) {
+        api->Put(i, i * 10);  // Inserting key i with value i*10
+    }
+    auto end_put = std::chrono::high_resolution_clock::now();
+    auto put_duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_put - start_put).count();
+    std::cout << "Total time taken for Put operations (10 million pairs): " << put_duration << " ms" << std::endl;
+
+    // Measure the time taken for the Scan operation
+    auto start_scan = std::chrono::high_resolution_clock::now();
+    unordered_map<long long, long long> result = api->Scan(scan_start_key, scan_end_key);
+    auto end_scan = std::chrono::high_resolution_clock::now();
+    auto scan_duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_scan - start_scan).count();
+    double avg_scan_time_per_key = static_cast<double>(scan_duration) / scan_range;
+
+    std::cout << "Total time taken for Scan operation (1 million range): " << scan_duration << " ms" << std::endl;
+    std::cout << "Average time per key in Scan operation: " << avg_scan_time_per_key << " ms" << std::endl;
+
+    // Verify that the scan result is correct
+    EXPECT_EQ(result.size(), scan_range);
+    bool all_values_correct = true;
+    for (long long i = scan_start_key; i <= scan_end_key; ++i) {
+        if (result[i] != i * 10) {
+            all_values_correct = false;
+            break;
+        }
+    }
+    EXPECT_TRUE(all_values_correct);
+
+    // Close the database and clean up
+    api->Close();
+    delete api;
+    fs::remove_all(db_name);  // Clean up the created directory
+}
