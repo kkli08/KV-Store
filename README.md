@@ -74,3 +74,6 @@ TBA
 > 2024-09-02 
 > 
 ![UML](/img/kvdb_s1_uml.jpg)
+
+### Dataflow Diagram
+![DFD](/img/kvdb_lv0.jpg)
