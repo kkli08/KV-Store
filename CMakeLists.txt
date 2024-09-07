@@ -1,12 +1,13 @@
 cmake_minimum_required(VERSION 3.10)  # Specify the minimum version of CMake
 
+# Project name
 project(KVStore)
 
-# GoogleTest requires at least C++14
-# <filesystem> needs C++17
+# Set the required C++ standard and features
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Include GoogleTest via FetchContent
 include(FetchContent)
 FetchContent_Declare(
         googletest
@@ -16,31 +17,24 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
+# Find OpenSSL library
 find_package(OpenSSL REQUIRED)
 include_directories(${OPENSSL_INCLUDE_DIR})
+
+# Enable testing
 enable_testing()
-#FetchContent_Declare(
-#        cryptopp
-#        URL https://github.com/weidai11/cryptopp/archive/refs/tags/CRYPTOPP_8_9_0.zip
-#)
-#FetchContent_MakeAvailable(cryptopp)
-#message(STATUS "Crypto++ source directory: ${cryptopp_SOURCE_DIR}")
-#
-## Include the Crypto++ headers
-#include_directories(${cryptopp_SOURCE_DIR})
 
-
-
-# Add the test executable
+# ---- TEST TARGET ----
 add_executable(runTests
-#        TEST
+        # Test files
         tests/binarytree_tests.cpp
         tests/redblacktree_unittest.cpp
         tests/api_unittest.cpp
         tests/memtable_unittest.cpp
         tests/sstIndex_unittest.cpp
         tests/encryption_unittest.cpp
-#        SRC files
+
+        # Source files required by tests
         tree/BinaryTree.cpp
         tree/TreeNode.cpp
         tree/RedBlackTree.cpp
@@ -50,35 +44,34 @@ add_executable(runTests
         AesEncryption/Encryption.h
 )
 
-# Link Google Test to the test executable
+# Link Google Test and OpenSSL to the test executable
 target_link_libraries(runTests gtest gtest_main OpenSSL::Crypto)
 
-# Enable the tests to be run with `ctest`
+# Register tests with CTest
 add_test(NAME runTests COMMAND runTests)
 
 
-# Add source file
-set(SOURCE
-    main.cpp
+# ---- MAIN TARGET ----
+# List of source files
+set(SOURCE_FILES
+        main.cpp
         api/api.cpp
         memtable/Memtable.cpp
         tree/BinaryTree.cpp
         tree/TreeNode.cpp
         tree/RedBlackTree.cpp
         SSTIndex/SSTIndex.cpp
-#        AesEncryption/AesEncryption.cpp
 )
 
+# Add the executable
+add_executable(main ${SOURCE_FILES})
+
 # Include directories (header files)
-include_directories(${PROJECT_SOURCE_DIR}/api)
-include_directories(${PROJECT_SOURCE_DIR}/memtable)
-include_directories(${PROJECT_SOURCE_DIR}/tree)
-include_directories(${PROJECT_SOURCE_DIR}/SSTIndex)
-include_directories(${PROJECT_SOURCE_DIR}/AesEncryption)
+include_directories(
+        ${PROJECT_SOURCE_DIR}/api
+        ${PROJECT_SOURCE_DIR}/memtable
+        ${PROJECT_SOURCE_DIR}/tree
+        ${PROJECT_SOURCE_DIR}/SSTIndex
+        ${PROJECT_SOURCE_DIR}/AesEncryption
+)
 
-
-# Add the executable by specifying the source file(s)
-add_executable(main ${SOURCE})
-
-# Link your executable with Crypto++
-#target_link_libraries(main cryptopp-static)
