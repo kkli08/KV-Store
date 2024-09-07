@@ -33,6 +33,7 @@ add_executable(runTests
         tests/memtable_unittest.cpp
         tests/sstIndex_unittest.cpp
         tests/encryption_unittest.cpp
+        tests/kvpair_unittest.cpp
 
         # Source files required by tests
         tree/BinaryTree.cpp
@@ -42,6 +43,7 @@ add_executable(runTests
         memtable/Memtable.cpp
         SSTIndex/SSTIndex.cpp
         AesEncryption/Encryption.h
+        kv/KeyValue.cpp
 )
 
 # Link Google Test and OpenSSL to the test executable
@@ -61,6 +63,7 @@ set(SOURCE_FILES
         tree/TreeNode.cpp
         tree/RedBlackTree.cpp
         SSTIndex/SSTIndex.cpp
+        kv/KeyValue.cpp
 )
 
 # Add the executable
@@ -73,5 +76,6 @@ include_directories(
         ${PROJECT_SOURCE_DIR}/tree
         ${PROJECT_SOURCE_DIR}/SSTIndex
         ${PROJECT_SOURCE_DIR}/AesEncryption
+        ${PROJECT_SOURCE_DIR}/kv
 )
 
