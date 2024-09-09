@@ -3,6 +3,7 @@
 //
 
 #include <gtest/gtest.h>
+#include <sstream>
 #include "KeyValue.h"
 
 // Test for Key and Value Type Deduction
@@ -85,4 +86,96 @@ TEST(KeyValueTest, CharValues) {
 
     EXPECT_EQ(std::get<char>(kv.getKey()), 'A');
     EXPECT_EQ(std::get<char>(kv.getValue()), 'B');
+}
+
+TEST(KeyValueTest, CompareIntWithLong) {
+    KeyValue kv1(100, 0);  // int key
+    KeyValue kv2(100LL, 0);  // long long key
+
+    EXPECT_FALSE(kv1 < kv2);
+    EXPECT_FALSE(kv2 < kv1);
+    EXPECT_TRUE(kv1 == kv2);
+}
+
+TEST(KeyValueTest, CompareIntWithDouble) {
+    KeyValue kv1(100, 0);  // int key
+    KeyValue kv2(100.0, 0);  // double key
+
+    EXPECT_FALSE(kv1 < kv2);
+    EXPECT_FALSE(kv2 < kv1);
+    EXPECT_TRUE(kv1 == kv2);
+}
+
+TEST(KeyValueTest, CompareIntWithString) {
+    KeyValue kv1(100, 0);  // int key
+    KeyValue kv2("abc", 0);  // string key
+
+    EXPECT_TRUE(kv1 < kv2);
+    EXPECT_FALSE(kv2 < kv1);
+}
+
+TEST(KeyValueTest, CompareDoubleWithString) {
+    KeyValue kv1(100.5, 0);  // double key
+    KeyValue kv2("xyz", 0);  // string key
+
+    EXPECT_TRUE(kv1 < kv2);
+    EXPECT_FALSE(kv2 < kv1);
+}
+
+TEST(KeyValueTest, CompareCharWithString) {
+    KeyValue kv1('a', 0);  // char key
+    KeyValue kv2("abc", 0);  // string key
+
+    EXPECT_TRUE(kv1 < kv2);
+    EXPECT_FALSE(kv2 < kv1);
+}
+
+TEST(KeyValueTest, CompareCharWithDouble) {
+    KeyValue kv1('a', 0);  // char key
+    KeyValue kv2(99.99, 0);  // double key
+
+    EXPECT_FALSE(kv1 > kv2);
+    EXPECT_TRUE(kv2 > kv1);
+}
+
+TEST(KeyValueTest, CompareStringWithString) {
+    KeyValue kv1("abc", 0);  // string key
+    KeyValue kv2("xyz", 0);  // string key
+
+    EXPECT_TRUE(kv1 < kv2);
+    EXPECT_FALSE(kv2 < kv1);
+}
+
+TEST(KeyValueTest, CompareDefaultKeyValues) {
+    KeyValue kv1;  // Default KeyValue (int key initialized to 0)
+    KeyValue kv2(0, 0);  // Explicitly initialized to 0
+
+    EXPECT_TRUE(kv1 == kv2);  // Default and explicit 0 should be equal
+}
+
+// Test the printKeyValue method
+TEST(KeyValueTest, Print_KeyValue) {
+    // Create a KeyValue instance
+    KeyValue kv(100, "testValue");
+
+    // Redirect the output to a stringstream
+    std::ostringstream output;
+    std::streambuf* oldCoutStreamBuf = std::cout.rdbuf();  // Save old buffer
+    std::cout.rdbuf(output.rdbuf());  // Redirect std::cout to stringstream
+
+    // Call printKeyValue() which should print the key-value to the stream
+    kv.printKeyValue();
+
+    // Restore std::cout to its original buffer
+    std::cout.rdbuf(oldCoutStreamBuf);
+
+    // Expected output
+    std::string expectedOutput =
+        "Key Type: INT\n"
+        "Key: 100\n"
+        "Value Type: STRING\n"
+        "Value: testValue\n";
+
+    // Compare the redirected output to the expected output
+    EXPECT_EQ(output.str(), expectedOutput);
 }

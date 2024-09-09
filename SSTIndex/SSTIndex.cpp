@@ -199,68 +199,6 @@ long long SSTIndex::SearchInSST(const std::string& filename, long long _key) {
 }
 
 
-// BINARY SEARCH
-// This function is not work since we store data in binary format
-// long long SSTIndex::SearchInSST(const std::string& filename, long long _key) {
-//   std::ifstream infile(path / filename);
-//   if (!infile.is_open()) {
-//     return -1;  // File doesn't exist
-//   }
-//
-//   infile.seekg(0, std::ios::end);
-//   std::streampos file_size = infile.tellg();
-//   if (file_size == 0) {
-//     infile.close();
-//     return -1;  // File is empty
-//   }
-//
-//   long long left = 0;
-//   long long right = file_size;
-//   long long key, value;
-//   std::string line;
-//
-//   while (left <= right) {
-//     // Calculate the midpoint
-//     long long mid = left + (right - left) / 2;
-//
-//     // Seek to the approximate midpoint in the file
-//     infile.seekg(mid, std::ios::beg);
-//
-//     // Move to the start of the next line if we are not at the beginning
-//     if (mid != 0) {
-//       infile.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-//     }
-//
-//     // Read the key-value pair at the current position
-//     if (!std::getline(infile, line)) {
-//       break;  // Reached the end of the file or error
-//     }
-//
-//     std::istringstream iss(line);
-//     std::string key_str, value_str;
-//     if (std::getline(iss, key_str, ',') && std::getline(iss, value_str)) {
-//       key = std::stoll(key_str);
-//       value = std::stoll(value_str);
-//
-//       if (key == _key) {
-//         infile.close();
-//         return value;  // Key found, return the associated value
-//       } else if (key < _key) {
-//         left = infile.tellg();  // Move right
-//       } else {
-//         right = mid - 1;  // Move left
-//       }
-//     } else {
-//       // Handle malformed lines (if any)
-//       infile.close();
-//       return -1;  // Invalid line format
-//     }
-//   }
-//
-//   infile.close();
-//   return -1;  // Key not found
-// }
-
 // search value for key
 long long SSTIndex::Search(long long _key) {
   // Traverse the deque from the youngest (back) to the oldest (front)

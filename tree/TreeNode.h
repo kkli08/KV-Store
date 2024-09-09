@@ -4,23 +4,34 @@
 
 #ifndef TREENODE_H
 #define TREENODE_H
+#include "KeyValue.h"
 
 enum Color {RED, BLACK, DOUBLE_BLACK, NA};
 
 class TreeNode {
     public:
-        long long key;
-        long long value;
+        KeyValue keyValue;
         TreeNode* left;
         TreeNode* right;
         TreeNode* parent;
         int color;
-        // Constructor
-        TreeNode(long long key, long long value); // insert RED node as default
-        TreeNode(long long key, long long value, Color c);
+
+        // Constructor that directly takes key and value
+        TreeNode(KeyValue kv);  // Insert RED node as default
+        TreeNode(KeyValue kv, Color c);
+
+        template<typename K, typename V>
+        TreeNode(K key, V value);
+
+        // Constructor that allows setting the color
+        template<typename K, typename V>
+        TreeNode(K key, V value, Color c);
+
         // Destructor
-        ~TreeNode();
+        inline ~TreeNode();
 
 };
+
+#include "TreeNode.tpp"
 
 #endif //TREENODE_H

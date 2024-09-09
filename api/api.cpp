@@ -59,99 +59,71 @@ namespace kvdb {
     check_if_open();
     std::cout << "Closing database " << std::endl;
     // The close command should transform whatever is in the current Memtable into an SST
-    FlushSSTInfo* info = memtable->flushToDisk();
+    FlushSSTInfo info = memtable->file_manager.flushToDisk(memtable->getTree()->inOrderFlushToSst());
     /*
      *  Insert file into SSTIndex
      *
      */
-    if(info->largest_key >= info->smallest_key) {
+    if(info.largest_key >= info.smallest_key) {
       // non-empty SST file
-      index->addSST(info->fileName, info->smallest_key, info->smallest_key);
+      // index->addSST(info->fileName, info->smallest_key, info->smallest_key);
     }
     // set flag
     is_open = false;
-    // clean up memory
-    delete info;
   }
 
   /*
-   * void API::Put(LL, LL)
+   * void API::Put(Key, Value)
    *
    * Store key-value pair in kv database
    */
-  void API::Put(long long key, long long value) {
-    // Put method
-    // check if db is open
-    check_if_open();
-
-    // The key should not be -1
-    if (key == -1) {
-      cerr << "Key should not be -1, try use other value as the key." << std::endl;
-      return;
-    }
-
-    FlushSSTInfo* info = memtable->put(key, value);
-
-    if (info != nullptr) {
-      // Debug Purpose :-D
-      // cout << "\n>>>>>> Ready for flushing" << endl;
-      // cout << info->fileName << "'s smallest key: " << info->smallest_key << " and largest key: " << info->largest_key << endl;
-
-      // flush happens and safe access info attribute
-      if(info->largest_key >= info->smallest_key) {
-        // non-empty SST file
-        index->addSST(info->fileName, info->smallest_key, info->largest_key);
-      }
-    }
-
-  }
+// inside api.tpp
 
   /*
-   * LL API::Get(LL)
+   * KeyValue API::Get(KeyValue&)
    *
    * Return the value of a key, return -1 if the key
    * doesn't exist in memtable or SSTs
    */
-  long long API::Get(long long key) {
-    // Get method
-    // check if db is open
+  KeyValue API::Get(const KeyValue& keyValue) {
+    // Check if the database is open
     check_if_open();
 
-    long long value = memtable->get(key);
-    // check memtable
-    if (value != -1) {
-      return value;
+    // Attempt to get the value from the memtable
+    KeyValue result = memtable->get(keyValue);
+
+    // Check if the returned KeyValue is empty
+    if (result.isEmpty()) {
+      // If the result is empty, check in the SSTs
+      // result = index->Search(keyValue);
+      // if (!result.isEmpty()) {
+      //     return result;
+      // }
     }
 
-    // check in SSTs.
-    value = index->Search(key);
-    if ( value != -1) {
-      return value;
-    }
-
-    return -1;
+    // Return the result (either from memtable or SSTs)
+    return result;
   }
 
-
   /*
-   * unordered_map<LL, LL> API::Scan(LL, LL)
+   * set<KeyValue> API::Scan(KeyValue, KeyValue)
    *
    * Search the memtable and the SSTs.
    * step 1:
-   *    scan the SSTs from oldest to youngest
-   * step 2:
    *    scan the memtable
+   * step 2:
+   *    scan the SSTs from oldest to youngest
    */
-  unordered_map<long long, long long> API::Scan(long long small_key, long long large_key) {
-    unordered_map<long long, long long> result;
+  set<KeyValue> API::Scan(KeyValue small_key, KeyValue large_key) {
+    set<KeyValue> result;
 
     // step 1:
-    // scan the SSTs from oldest to youngest
-    index->Scan(small_key, large_key, result);
-
-    // step 2:
     // scan the memtable
     memtable->Scan(small_key, large_key, result);
+
+    // step 2:
+    // scan the SSTs from youngest to oldest
+    // index->Scan(small_key, large_key, result);
 
     return result;
   }

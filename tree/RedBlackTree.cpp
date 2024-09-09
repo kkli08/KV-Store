@@ -31,46 +31,51 @@ void RedBlackTree::inorderRBT(TreeNode *&node) {
     // Recursively traverse the left subtree
     inorderRBT(node->left);
     // Print the key and value of the current node
-    std::cout << "Key: " << node->key << ", Value: " << node->value << ", Color: "
+    node->keyValue.printKeyValue();
+    std::cout << "Color: "
               << (node->color == RED ? "Red" : (node->color == BLACK ? "Black" :
                   (node->color == DOUBLE_BLACK ? "Double Black" : "N/A"))) << std::endl;
     // Recursively traverse the right subtree
     inorderRBT(node->right);
 }
 
-vector<pair<long long, long long>> RedBlackTree::inOrderFlushToSst() {
-    vector<pair<long long, long long>> kv_pairs;
-    inorderTraversal(root, kv_pairs);
-    return kv_pairs;
+vector<KeyValue> RedBlackTree::inOrderFlushToSst() {
+    vector<KeyValue> kv_pairs;  // Store KeyValue objects
+    inorderTraversal(root, kv_pairs);  // Perform in-order traversal
+    return kv_pairs;  // Return the vector of KeyValue objects
 }
 
-void RedBlackTree::inorderTraversal(TreeNode* node, vector<pair<long long, long long>> &kv_pairs) {
+
+void RedBlackTree::inorderTraversal(TreeNode* node, vector<KeyValue> &kv_pairs) {
     if (node == nullptr) {
         return;
     }
     inorderTraversal(node->left, kv_pairs);
-    kv_pairs.push_back({node->key, node->value});
+    kv_pairs.push_back(node->keyValue);
     inorderTraversal(node->right, kv_pairs);
 }
 
-long long RedBlackTree::getValue(long long key) {
-    if(search(key)) {
-        // return value
-        return getValue(root, key);
+KeyValue RedBlackTree::getValue(const KeyValue& kv) {
+    if (search(kv)) {
+        // Return the found KeyValue
+        return getValue(root, kv);
     }
-    return -1;
+    // Return an empty KeyValue (or handle not found in another way)
+    // currently just make it empty 2024-09-08
+    return KeyValue();
 }
 
-long long RedBlackTree::getValue(TreeNode *&node, long long _key) {
-    if (node->key == _key) {
-        return node->value;
-    } else if (_key < node->key) {
-        return getValue(node->left, _key);
+KeyValue RedBlackTree::getValue(TreeNode *&node, const KeyValue& kv) {
+    if (node->keyValue == kv) {
+        // Return the value from the matching node
+        return node->keyValue;
+    } else if (kv < node->keyValue) {
+        return getValue(node->left, kv);  // Search in the left subtree
     } else {
-        return getValue(node->right, _key);
+        return getValue(node->right, kv);  // Search in the right subtree
     }
-    return -1;
 }
+
 
 /*
  * Red Black Tree Insertions
@@ -81,40 +86,45 @@ long long RedBlackTree::getValue(TreeNode *&node, long long _key) {
  *  - fixInsertRBTree
  */
 // RBTree insert method
-void RedBlackTree::insert(long long _key, long long _value) {
-    // search key first
-    if (search(_key)) {
-        // update the value
-        updateExistedKeyValue(root, _key, _value);
-    }else {
-        TreeNode* newNode = new TreeNode(_key, _value);
-        root = insert(root, newNode);
-        fixInsertRBTree(newNode);
-    }
-
-}
-
-void RedBlackTree::updateExistedKeyValue(TreeNode *&node, long long _key, long long _value) {
-    if (node == nullptr) {
-        // return;
-    } else if (node->key == _key) {
-        node->value = _value;
-    } else if (_key < node->key) {
-        updateExistedKeyValue(node->left, _key, _value);
+void RedBlackTree::insert(KeyValue kv) {
+    // First, search for the key in the tree
+    if (search(kv)) {
+        // If the key exists, update the value
+        updateExistedKeyValue(root, kv);
     } else {
-        updateExistedKeyValue(node->right, _key, _value);
+        // Create a new TreeNode with the KeyValue
+        TreeNode* newNode = new TreeNode(kv);
+        root = insert(root, newNode);  // Insert the new node in the tree
+        fixInsertRBTree(newNode);      // Fix any red-black tree property violations
     }
 }
+
+
+void RedBlackTree::updateExistedKeyValue(TreeNode *&node, KeyValue& kv) {
+    if (node == nullptr) {
+        return;  // If node is null, there's nothing to update
+    } else if (node->keyValue == kv) {
+        // If the key matches, update the value
+        node->keyValue = kv;  // Replace the whole KeyValue
+    } else if (kv < node->keyValue) {
+        // If the key is smaller, traverse the left subtree
+        updateExistedKeyValue(node->left, kv);
+    } else {
+        // Otherwise, traverse the right subtree
+        updateExistedKeyValue(node->right, kv);
+    }
+}
+
 
 // BST insertions
 TreeNode* RedBlackTree::insert(TreeNode*& root, TreeNode*& newNode){
   if (root == nullptr)
     return newNode;
 
-  if (newNode->key < root->key) {
+  if (newNode->keyValue < root->keyValue) {
     root->left = insert(root->left, newNode);
     root->left->parent = root;
-  } else if (newNode->key > root->key) {
+  } else if (newNode->keyValue > root->keyValue) {
     root->right = insert(root->right, newNode);
     root->right->parent = root;
   }
@@ -215,28 +225,42 @@ void RedBlackTree::rotateRight(TreeNode *&ptr) {
  * - deleteBST
  * - fixDeleteRBTree
  */
-void RedBlackTree::deleteKey(long long _key) {
-  TreeNode *node = deleteBST(root, _key);
-  fixDeleteRBTree(node);
+void RedBlackTree::deleteKey(KeyValue kv) {
+    TreeNode *node = deleteBST(root, kv);  // Call the updated deleteBST with KeyValue
+    fixDeleteRBTree(node);  // Fix red-black tree properties after deletion
 }
 
-TreeNode* RedBlackTree::deleteBST(TreeNode *&root, long long _key) {
-  if (root == nullptr)
-    return root;
 
-  if (_key < root->key)
-    return deleteBST(root->left, _key);
+TreeNode* RedBlackTree::deleteBST(TreeNode *&root, KeyValue kv) {
+    if (root == nullptr) {
+        return root;  // Base case: key not found
+    }
 
-  if (_key > root->key)
-    return deleteBST(root->right, _key);
+    if (kv < root->keyValue) {
+        // If the key is smaller, search in the left subtree
+        return deleteBST(root->left, kv);
+    }
 
-  if (root->left == nullptr || root->right == nullptr)
-    return root;
+    if (kv > root->keyValue) {
+        // If the key is larger, search in the right subtree
+        return deleteBST(root->right, kv);
+    }
 
-  TreeNode *temp = minValueNode(root->right);
-  root->key = temp->key;
-  return deleteBST(root->right, temp->key);
+    // If the node has one child or no children
+    if (root->left == nullptr || root->right == nullptr) {
+        return root;
+    }
+
+    // If the node has two children, find the inorder successor (smallest in the right subtree)
+    TreeNode *temp = minValueNode(root->right);
+
+    // Replace the current node's key-value with the inorder successor's key-value
+    root->keyValue = temp->keyValue;
+
+    // Delete the inorder successor
+    return deleteBST(root->right, temp->keyValue);
 }
+
 
 void RedBlackTree::fixDeleteRBTree(TreeNode *&node) {
     if (node == nullptr)

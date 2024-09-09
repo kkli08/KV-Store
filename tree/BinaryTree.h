@@ -4,35 +4,52 @@
 
 #ifndef BINARYTREE_H
 #define BINARYTREE_H
+
 #include "TreeNode.h"
-#include <unordered_map>
-
+#include "KeyValue.h"
+#include <set>
 using namespace std;
+
 class BinaryTree {
-    public:
-        BinaryTree();
-        virtual ~BinaryTree();
+public:
+    BinaryTree();
+    virtual ~BinaryTree();
 
-        virtual void insert(long long key, long long value);
-        bool search(long long key);
-        TreeNode* getRoot();
-        // traverse methods
-        virtual void inorderTraversal();
-        void preorderTraversal();
-        void postorderTraversal();
-        void Scan(TreeNode*, long long small_key, long long large_key, unordered_map<long long, long long>& res);
+    // Templated insert method
+    template<typename K, typename V>
+    void insert(K key, V value);
+    bool search(const KeyValue& kv);  // Search using KeyValue
+    // Templated search method
+    template<typename K>
+    bool search(K key);
 
-    protected:
-        TreeNode *root;
-        virtual void insert(TreeNode*& node, long long key, long long value);
-        bool search(TreeNode* node, long long key);
+    TreeNode*& getRoot();
 
-        // traverse methods
-        void inorderTraversal(TreeNode* node);
-        void preorderTraversal(TreeNode* node);
-        void postorderTraversal(TreeNode* node);
+    // Traverse methods
+    virtual void inorderTraversal();
+    void preorderTraversal();
+    void postorderTraversal();
 
-        static void destroyTree(const TreeNode* node);
+    // void Scan(TreeNode* node, long long small_key, long long large_key, unordered_map<long long, KeyValue>& res);
+    void Scan(TreeNode* node, const KeyValue& small_key, const KeyValue& large_key, std::set<KeyValue>& res);
+
+protected:
+    TreeNode *root;
+
+    // Internal insert method using KeyValue
+    void insert(TreeNode*& node, KeyValue kv);
+
+    bool search(TreeNode* node, const KeyValue& kv);  // Internal search
+
+    // Traverse methods
+    void inorderTraversal(TreeNode* node);
+    void preorderTraversal(TreeNode* node);
+    void postorderTraversal(TreeNode* node);
+
+    static void destroyTree(const TreeNode* node);
 };
 
-#endif //BINARYTREE_H
+#include "BinaryTree.tpp"  // Include the templated method implementations
+
+#endif // BINARYTREE_H
+

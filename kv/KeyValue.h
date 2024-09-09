@@ -20,13 +20,9 @@ public:
     using KeyType = std::variant<int, long long, double, char, std::string>;
     using ValueType = std::variant<int, long long, double, char, std::string>;
 
-private:
-    KeyType key;
-    ValueType value;
-    KeyValueType keyType;
-    KeyValueType valueType;
+    // default constructor
+    KeyValue() : key(0), value(0), keyType(KeyValueType::INT), valueType(KeyValueType::INT) {};
 
-public:
     // Templated constructor that automatically deduces the type
     template<typename K, typename V>
     KeyValue(K k, V v);
@@ -39,6 +35,10 @@ public:
 
     // Comparison operator for keys
     bool operator<(const KeyValue& other) const;
+    bool operator>(const KeyValue& other) const;
+    bool operator<=(const KeyValue& other) const;
+    bool operator>=(const KeyValue& other) const;
+    bool operator==(const KeyValue& other) const;
 
     // Print key-value
     void printKeyValue() const;
@@ -46,7 +46,16 @@ public:
     // Convert enum to string for printing purposes
     static std::string keyValueTypeToString(KeyValueType type);
 
+    bool isEmpty() const;
+
+
+
 private:
+
+    KeyType key;
+    ValueType value;
+    KeyValueType keyType;
+    KeyValueType valueType;
     // Function to deduce the type of the key and value and return the corresponding enum
     template<typename T>
     KeyValueType deduceType(const T& value) const;

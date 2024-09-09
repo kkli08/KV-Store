@@ -33,12 +33,16 @@ namespace kvdb {
         void Open(string db_name);
         void Close();
 
-        void Put(long long key, long long value);
-        long long Get(long long key);
-        unordered_map<long long, long long> Scan(long long small_key, long long large_key);
+
         Memtable* GetMemtable() const {return memtable.get();};
         int SetMemtableSize(int memtable_size);
         void IndexCheck();
+
+        // update with KeyValue Class
+        template<typename K, typename V>
+        void Put(K key, V value);
+        KeyValue Get(const KeyValue& keyValue);
+        set<KeyValue> Scan(KeyValue small_key, KeyValue large_key);
 
     private:
         unique_ptr<Memtable> memtable;
@@ -57,4 +61,5 @@ namespace kvdb {
         }
     };
 }
+#include "api.tpp"
 #endif //API_H

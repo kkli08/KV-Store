@@ -5,278 +5,167 @@
 #include <string>
 #include "RedBlackTree.h"
 
-// Test case for inserting a single node
-TEST(RedBlackTreeTest, InsertSingleNode) {
-    RedBlackTree* rbt = new RedBlackTree();
-    // Insert a key-value pair into the tree
-    long long key = 10;
-    long long value = 100;
-    rbt->insert(key, value);
+TEST(RedBlackTreeTest, InsertIntoEmptyTree) {
+    RedBlackTree tree;
 
-    // Check if the key exists in the tree
-    EXPECT_TRUE(rbt->search(key));
+    // Insert a KeyValue pair into the empty tree
+    KeyValue kv(10, "value10");
+    tree.insert(kv);
 
-    // Verify the value of the inserted node
-    TreeNode* node = rbt->search(key) ? rbt->getRoot() : nullptr;
-    EXPECT_NE(node, nullptr); // Node should not be null
-    EXPECT_EQ(node->value, value); // Value should match
-
-    // Verify that the root node is black (which should be true in a Red-Black Tree)
-    EXPECT_EQ(node->color, BLACK);
-
-    delete rbt;
-}
-
-// Test case for inserting multiple nodes
-TEST(RedBlackTreeTest, InsertMultipleNodes) {
-    RedBlackTree* rbt = new RedBlackTree();
-    rbt->insert(10, 100);
-    rbt->insert(20, 200);
-    rbt->insert(30, 300);
-    rbt->insert(40, 400);
-
-    // Check that all keys are correctly inserted
-    EXPECT_TRUE(rbt->search(10));
-    EXPECT_TRUE(rbt->search(20));
-    EXPECT_TRUE(rbt->search(30));
-    EXPECT_TRUE(rbt->search(40));
-    delete rbt;
-
-}
-
-// RBTree visualization tool: https://www.cs.usfca.edu/~galles/visualization/RedBlack.html
-TEST(RedBlackTreeTest, InsertSimpleSequence) {
-    RedBlackTree* rbt = new RedBlackTree();
-    rbt->insert(10, 100);
-    rbt->insert(20, 200);
-    rbt->insert(30, 300);
-
-    testing::internal::CaptureStdout();
-    rbt->inorderTraversal();
-    std::string output = testing::internal::GetCapturedStdout();
-
-    std::string expectedOutput =
-        "Key: 10, Value: 100, Color: Red\n"
-        "Key: 20, Value: 200, Color: Black\n"
-        "Key: 30, Value: 300, Color: Red\n";
-
-    EXPECT_EQ(output, expectedOutput);
-    delete rbt;
-}
-
-TEST(RedBlackTreeTest, InsertReverseSequence) {
-    RedBlackTree* rbt = new RedBlackTree();
-    rbt->insert(30, 300);
-    rbt->insert(20, 200);
-    rbt->insert(10, 100);
-
-    testing::internal::CaptureStdout();
-    rbt->inorderTraversal();
-    std::string output = testing::internal::GetCapturedStdout();
-
-    std::string expectedOutput =
-        "Key: 10, Value: 100, Color: Red\n"
-        "Key: 20, Value: 200, Color: Black\n"
-        "Key: 30, Value: 300, Color: Red\n";
-
-    EXPECT_EQ(output, expectedOutput);
-    delete rbt;
-}
-
-TEST(RedBlackTreeTest, InsertMixedSequence) {
-    RedBlackTree* rbt = new RedBlackTree();
-    rbt->insert(20, 200);
-    rbt->insert(10, 100);
-    rbt->insert(30, 300);
-    rbt->insert(15, 150);
-
-    testing::internal::CaptureStdout();
-    rbt->inorderTraversal();
-    std::string output = testing::internal::GetCapturedStdout();
-
-    std::string expectedOutput =
-        "Key: 10, Value: 100, Color: Black\n"
-        "Key: 15, Value: 150, Color: Red\n"
-        "Key: 20, Value: 200, Color: Black\n"
-        "Key: 30, Value: 300, Color: Black\n";
-
-    EXPECT_EQ(output, expectedOutput);
-    delete rbt;
-}
-
-TEST(RedBlackTreeTest, InsertLargerSet) {
-    RedBlackTree* rbt = new RedBlackTree();
-    rbt->insert(40, 400);
-    rbt->insert(20, 200);
-    rbt->insert(10, 100);
-    rbt->insert(30, 300);
-    rbt->insert(50, 500);
-    rbt->insert(60, 600);
-
-    testing::internal::CaptureStdout();
-    rbt->inorderTraversal();
-    std::string output = testing::internal::GetCapturedStdout();
-
-    std::string expectedOutput =
-        "Key: 10, Value: 100, Color: Black\n"
-        "Key: 20, Value: 200, Color: Black\n"
-        "Key: 30, Value: 300, Color: Black\n"
-        "Key: 40, Value: 400, Color: Red\n"
-        "Key: 50, Value: 500, Color: Black\n"
-        "Key: 60, Value: 600, Color: Red\n";
-
-    EXPECT_EQ(output, expectedOutput);
-    delete rbt;
+    // Check if the key-value pair was inserted
+    KeyValue result = tree.getValue(kv);
+    EXPECT_TRUE(result == kv);
 }
 
 
-TEST(RedBlackTreeTest, UpdateExistedValue) {
-    RedBlackTree* rbt = new RedBlackTree();
-    rbt->insert(40, 400);
-    rbt->insert(20, 200);
-    rbt->insert(10, 100);
-    rbt->insert(30, 300);
-    rbt->insert(50, 500);
-    rbt->insert(60, 600);
-    rbt->insert(10, 900);
+TEST(RedBlackTreeTest, InsertWithDifferentKeyTypes) {
+    RedBlackTree tree;
 
-    testing::internal::CaptureStdout();
-    rbt->inorderTraversal();
-    std::string output = testing::internal::GetCapturedStdout();
+    // Insert KeyValue pairs with different key types
+    KeyValue kv1(10, "value10");
+    KeyValue kv2(5.5, "valueDouble");
 
-    std::string expectedOutput =
-        "Key: 10, Value: 900, Color: Black\n"
-        "Key: 20, Value: 200, Color: Black\n"
-        "Key: 30, Value: 300, Color: Black\n"
-        "Key: 40, Value: 400, Color: Red\n"
-        "Key: 50, Value: 500, Color: Black\n"
-        "Key: 60, Value: 600, Color: Red\n";
+    tree.insert(kv1);
+    tree.insert(kv2);
 
-    EXPECT_EQ(output, expectedOutput);
-    delete rbt;
+    // Check if both key-value pairs were inserted
+    KeyValue result1 = tree.getValue(kv1);
+    KeyValue result2 = tree.getValue(kv2);
+
+    EXPECT_TRUE(result1 == kv1);
+    EXPECT_TRUE(result2 == kv2);
+}
+
+TEST(RedBlackTreeTest, UpdateExistedKeyValue) {
+    RedBlackTree tree;
+
+    // Insert a KeyValue pair
+    KeyValue kv1(20, "initialValue");
+    tree.insert(kv1);
+
+    // Update the existing key with a new value
+    KeyValue updatedKv(20, "updatedValue");
+    tree.insert(updatedKv);  // Should update the value for key 20
+
+    // Check if the value was updated
+    KeyValue result = tree.getValue(updatedKv);
+    EXPECT_TRUE(result.getValue() == updatedKv.getValue());
+}
+
+TEST(RedBlackTreeTest, InsertMaintainRBTreeProperties) {
+    RedBlackTree tree;
+
+    // Insert several KeyValue pairs
+    tree.insert(KeyValue(15, "value15"));
+    tree.insert(KeyValue(10, "value10"));
+    tree.insert(KeyValue(20, "value20"));
+
+    // The root node should be black to maintain red-black tree properties
+    EXPECT_EQ(tree.getColor(tree.getRoot()), BLACK);
+}
+
+TEST(RedBlackTreeTest, InsertMixedKeyTypesAndInorderTraversal) {
+    // Use heap memory to create a new RedBlackTree
+    RedBlackTree* tree = new RedBlackTree();
+
+    // Insert different types of KeyValue pairs
+    tree->insert(KeyValue(10, "value10"));              // int
+    tree->insert(KeyValue(5.5, "valueDouble5.5"));      // double
+    tree->insert(KeyValue("keyString", "valueString")); // string
+    tree->insert(KeyValue('A', "valueCharA"));          // char
+
+    // Capture the inorder traversal output
+    std::vector<KeyValue> inorderResults = tree->inOrderFlushToSst();
+
+    // Check the size of the result
+    EXPECT_EQ(inorderResults.size(), 4);
+
+    // Iterate over the results and safely check the type of each key
+    auto it = inorderResults.begin();
+
+    if (std::holds_alternative<int>(it->getKey())) {
+        EXPECT_EQ(std::get<int>(it->getKey()), 10);
+    } else if (std::holds_alternative<double>(it->getKey())) {
+        EXPECT_EQ(std::get<double>(it->getKey()), 5.5);
+    } else if (std::holds_alternative<std::string>(it->getKey())) {
+        EXPECT_EQ(std::get<std::string>(it->getKey()), "keyString");
+    } else if (std::holds_alternative<char>(it->getKey())) {
+        EXPECT_EQ(std::get<char>(it->getKey()), 'A');
+    }
+
+    // Clean up memory
+    delete tree;
+}
+
+TEST(RedBlackTreeTest, InsertDeleteNodeAndCheckBalancing) {
+    RedBlackTree tree;
+
+    // Insert KeyValue pairs
+    tree.insert(KeyValue(20, "value20"));
+    tree.insert(KeyValue(10, "value10"));
+    tree.insert(KeyValue(30, "value30"));
+    tree.insert(KeyValue(5, "value5"));
+    tree.insert(KeyValue(15, "value15"));
+
+    // Delete a key from the tree
+    tree.deleteKey(KeyValue(10, ""));
+
+    // Ensure the key is no longer found
+    EXPECT_FALSE(tree.search(KeyValue(10, "")));
+
+    // Ensure other keys are still in the tree
+    EXPECT_TRUE(tree.search(KeyValue(5, "")));
+    EXPECT_TRUE(tree.search(KeyValue(15, "")));
+    EXPECT_TRUE(tree.search(KeyValue(20, "")));
+    EXPECT_TRUE(tree.search(KeyValue(30, "")));
+
+    // Ensure the tree is still balanced and maintains red-black tree properties
+    EXPECT_EQ(tree.getColor(tree.getRoot()), BLACK);
+    int blackHeight = tree.getBlackHeight(tree.getRoot());
+    EXPECT_EQ(tree.getBlackHeight(tree.getRoot()->left)+1, blackHeight);
+    EXPECT_EQ(tree.getBlackHeight(tree.getRoot()->right)+1, blackHeight);
 }
 
 
-TEST(RedBlackTreeTest, InOrderFlushSingleNode) {
-    RedBlackTree* rbt = new RedBlackTree();
-    long long key = 10;
-    long long value = 100;
-    rbt->insert(key, value);
+TEST(RedBlackTreeTest, InsertDuplicateKeyAndUpdateValue) {
+    RedBlackTree tree;
 
-    // Perform inOrderFlushToSst
-    std::vector<std::pair<long long, long long>> kv_pairs = rbt->inOrderFlushToSst();
+    // Insert a KeyValue pair
+    KeyValue kv1(42, "initialValue");
+    tree.insert(kv1);
 
-    // Verify the output
-    ASSERT_EQ(kv_pairs.size(), 1);
-    EXPECT_EQ(kv_pairs[0].first, key);
-    EXPECT_EQ(kv_pairs[0].second, value);
+    // Insert a KeyValue pair with the same key but a new value
+    KeyValue kvUpdated(42, "updatedValue");
+    tree.insert(kvUpdated);
 
-    delete rbt;
+    // Ensure the value is updated
+    KeyValue result = tree.getValue(kvUpdated);
+    EXPECT_EQ(std::get<std::string>(result.getValue()), "updatedValue");
+
+    // Ensure the key is still present
+    EXPECT_TRUE(tree.search(KeyValue(42, "")));
 }
 
+TEST(RedBlackTreeTest, LargeTreeAndCheckBlackHeight) {
+    // Use heap memory to create a new RedBlackTree
+    RedBlackTree* tree = new RedBlackTree();
 
-TEST(RedBlackTreeTest, InOrderFlushMultipleNodes) {
-    RedBlackTree* rbt = new RedBlackTree();
-    rbt->insert(10, 100);
-    rbt->insert(20, 200);
-    rbt->insert(5, 50);
+    // Insert a large number of nodes
+    const int largeTreeSize = 1000;
+    for (int i = 1; i <= largeTreeSize; ++i) {
+        tree->insert(KeyValue(i, "value" + std::to_string(i)));
+    }
 
-    // Perform inOrderFlushToSst
-    std::vector<std::pair<long long, long long>> kv_pairs = rbt->inOrderFlushToSst();
+    // Check if the tree is balanced by comparing black heights
+    int blackHeight = tree->getBlackHeight(tree->getRoot());
+    EXPECT_GT(blackHeight, 0);  // Ensure there's at least one black node
 
-    // Verify the output
-    ASSERT_EQ(kv_pairs.size(), 3);
-    EXPECT_EQ(kv_pairs[0].first, 5);
-    EXPECT_EQ(kv_pairs[0].second, 50);
-    EXPECT_EQ(kv_pairs[1].first, 10);
-    EXPECT_EQ(kv_pairs[1].second, 100);
-    EXPECT_EQ(kv_pairs[2].first, 20);
-    EXPECT_EQ(kv_pairs[2].second, 200);
+    // Verify that the black height is consistent for both left and right subtrees
+    int leftBlackHeight = tree->getBlackHeight(tree->getRoot()->left);
+    int rightBlackHeight = tree->getBlackHeight(tree->getRoot()->right);
 
-    delete rbt;
-}
+    EXPECT_EQ(leftBlackHeight, rightBlackHeight);
 
-TEST(RedBlackTreeTest, InOrderFlushCompleteTree) {
-    RedBlackTree* rbt = new RedBlackTree();
-    rbt->insert(30, 300);
-    rbt->insert(20, 200);
-    rbt->insert(40, 400);
-    rbt->insert(10, 100);
-    rbt->insert(25, 250);
-
-    std::vector<std::pair<long long, long long>> kv_pairs = rbt->inOrderFlushToSst();
-
-    // Verify the output
-    ASSERT_EQ(kv_pairs.size(), 5);
-    EXPECT_EQ(kv_pairs[0].first, 10);
-    EXPECT_EQ(kv_pairs[0].second, 100);
-    EXPECT_EQ(kv_pairs[1].first, 20);
-    EXPECT_EQ(kv_pairs[1].second, 200);
-    EXPECT_EQ(kv_pairs[2].first, 25);
-    EXPECT_EQ(kv_pairs[2].second, 250);
-    EXPECT_EQ(kv_pairs[3].first, 30);
-    EXPECT_EQ(kv_pairs[3].second, 300);
-    EXPECT_EQ(kv_pairs[4].first, 40);
-    EXPECT_EQ(kv_pairs[4].second, 400);
-
-    delete rbt;
-}
-
-TEST(RedBlackTreeTest, InOrderFlushDuplicateKeys) {
-    RedBlackTree* rbt = new RedBlackTree();
-    rbt->insert(15, 150);
-    rbt->insert(15, 250); // Attempt to insert duplicate key with a different value
-    rbt->insert(5, 50);
-
-    // Perform inOrderFlushToSst
-    std::vector<std::pair<long long, long long>> kv_pairs = rbt->inOrderFlushToSst();
-
-    // Verify the output, depending on your tree's handling of duplicates
-    ASSERT_EQ(kv_pairs.size(), 2); // Assuming the duplicate is either ignored or updated
-    EXPECT_EQ(kv_pairs[0].first, 5);
-    EXPECT_EQ(kv_pairs[0].second, 50);
-    EXPECT_EQ(kv_pairs[1].first, 15);
-    EXPECT_EQ(kv_pairs[1].second, 250); // Or 150 depending on your implementation
-
-    delete rbt;
-}
-
-TEST(RedBlackTreeTest, ScanWithinRange) {
-    RedBlackTree* rbtree = new RedBlackTree();
-    rbtree->insert(10, 100);
-    rbtree->insert(20, 200);
-    rbtree->insert(30, 300);
-    rbtree->insert(40, 400);
-    rbtree->insert(50, 500);
-
-    unordered_map<long long, long long> result;
-    rbtree->Scan(rbtree->getRoot(), 20, 40, result);
-
-    EXPECT_EQ(result.size(), 3);
-    EXPECT_EQ(result[20], 200);
-    EXPECT_EQ(result[30], 300);
-    EXPECT_EQ(result[40], 400);
-
-    delete rbtree;
-}
-
-TEST(RedBlackTreeTest, ScanEntireRange) {
-    RedBlackTree* rbtree = new RedBlackTree();
-    rbtree->insert(10, 100);
-    rbtree->insert(20, 200);
-    rbtree->insert(30, 300);
-    rbtree->insert(40, 400);
-    rbtree->insert(50, 500);
-
-    unordered_map<long long, long long> result;
-    rbtree->Scan(rbtree->getRoot(), 10, 50, result);
-
-    EXPECT_EQ(result.size(), 5);
-    EXPECT_EQ(result[10], 100);
-    EXPECT_EQ(result[20], 200);
-    EXPECT_EQ(result[30], 300);
-    EXPECT_EQ(result[40], 400);
-    EXPECT_EQ(result[50], 500);
-
-    delete rbtree;
+    // Cleanup memory
+    delete tree;
 }

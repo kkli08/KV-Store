@@ -22,6 +22,7 @@ Memtable::Memtable(int threshold) {
     current_size = 0;
     tree = new RedBlackTree();
     path = fs::path("defaultDB");
+
 }
 
 Memtable::Memtable() {
@@ -34,30 +35,40 @@ Memtable::~Memtable() {
     delete tree;
 }
 
-FlushSSTInfo* Memtable::put(long long key, long long value) {
-    FlushSSTInfo* info = nullptr;
+FlushSSTInfo Memtable::put(const KeyValue& kv) {
+    FlushSSTInfo info;
+
+    // Check if the memtable size limit is not reached
     if (current_size < memtable_size) {
-        tree->insert(key, value);
+        // Insert the key-value pair into the tree
+        tree->insert(kv);
         current_size++;
     } else if (current_size == memtable_size) {
-        // search() first to see if the value need to be updated
-        if(!tree->search(key)) {
-            // flush to disk and reset current_size to 0
-            info = flushToDisk();
+        // If the tree is full, check if the key exists to avoid unnecessary flush
+        if (!tree->search(kv)) {
+            if (!fs::exists(path)) {
+                fs::create_directories(path);  // Ensure the directory exists
+            }
+            // Flush the current tree to disk and reset the size
+            info = file_manager.flushToDisk(tree->inOrderFlushToSst());
             current_size = 0;
-            // relocate memory for tree
+
+            // Reallocate memory for the RedBlackTree
             delete tree;
             tree = new RedBlackTree();
         }
-        // insert pair
-        tree->insert(key, value);
+
+        // Insert the new key-value pair
+        tree->insert(kv);
         current_size++;
     }
+
     return info;
 }
 
-long long Memtable::get(long long key) {
-    return tree->getValue(key);
+
+KeyValue Memtable::get(const KeyValue& kv) const {
+    return tree->getValue(kv);
 }
 
 void Memtable::set_path(fs::path _path) {
@@ -67,59 +78,13 @@ void Memtable::set_path(fs::path _path) {
         fs::create_directories(_path);
     }
     path = _path;
+    file_manager.setDirectory(path);
 }
 fs::path Memtable::get_path() {
     return path;
 }
 
-// save data into .sst file
-FlushSSTInfo* Memtable::flushToDisk() {
-    return int_flush();
-}
 
-
-FlushSSTInfo* Memtable::int_flush() {
-    // Check if the directory exists
-    if (!fs::exists(path)) {
-        // Directory does not exist, so create it
-        if (fs::create_directory(path)) {
-            // std::cout << "Created database directory: " << path << std::endl;
-        } else {
-            std::cerr << "Failed to create directory: " << path << std::endl;
-        }
-    }
-
-    auto kv_pairs = tree->inOrderFlushToSst();
-    string filename = generateSstFilename();
-    fs::path filepath = path / filename;
-
-    // Open the SST file in binary mode
-    ofstream sst_file(filepath, ios::binary);
-    if (!sst_file) {
-        cerr << "Failed to open SST file for writing: " << filepath << std::endl;
-        return nullptr;
-    }
-    // for (const auto& pair : kv_pairs) {
-    //     // convert into string type with exactly 8-byte-long
-    //     string line = longLongToString(pair.first)+", "+longLongToString(pair.second);
-    //     sst_file << line << "\n";
-    // }
-    for (const auto& pair : kv_pairs) {
-        // Write the key and value directly as binary data
-        sst_file.write(reinterpret_cast<const char*>(&pair.first), sizeof(long long int));
-        sst_file.write(",", 1);  // Write a comma separator
-        sst_file.write(reinterpret_cast<const char*>(&pair.second), sizeof(long long int));
-        sst_file.write("\n", 1);  // Write a newline at the end of the line
-    }
-    sst_file.close();
-
-    FlushSSTInfo* info = new FlushSSTInfo{
-        filename,
-        kv_pairs.size() > 0 ? kv_pairs[0].first : 1,
-        kv_pairs.size() > 0 ? kv_pairs[kv_pairs.size()-1].first : -1
-    };
-    return info;
-}
 
 std::string Memtable::generateSstFilename() {
     // Get the current SST file size count
@@ -141,28 +106,7 @@ std::string Memtable::generateSstFilename() {
 }
 
 // scan the tree and insert the kv-pairs<k,v> into res where small_key <= k && k <= large_key
-void Memtable::Scan(long long small_key, long long large_key, unordered_map<long long, long long>& res) {
+void Memtable::Scan(KeyValue small_key, KeyValue large_key, set<KeyValue>& res) {
     tree->Scan(tree->getRoot(), small_key, large_key, res);
 }
 
-/*
- * helper functions:
- * string longLongToString(long long value)
- *     --> convert LL int type to 8 byte string
- * ll stringToLongLong(const std::string &str)
- *     --> convert string into LL int type
- */
-std::string Memtable::longLongToString(long long value) {
-    std::string result(sizeof(long long int), '\0');
-    memcpy(&result[0], &value, sizeof(long long int));
-    return result;
-}
-
-long long Memtable::stringToLongLong(const std::string &str) {
-    if (str.size() != sizeof(long long int)) {
-        throw std::invalid_argument("String size does not match long long int size");
-    }
-    long long value;
-    memcpy(&value, str.data(), sizeof(long long int));
-    return value;
-}

@@ -3,6 +3,7 @@
 //
 #include <iostream>
 #include "BinaryTree.h"
+
 // Constructor
 BinaryTree::BinaryTree() : root(nullptr) {}
 
@@ -11,7 +12,7 @@ BinaryTree::~BinaryTree() {
     destroyTree(root);
 }
 
-TreeNode* BinaryTree::getRoot() {
+TreeNode*& BinaryTree::getRoot() {
     return root;
 }
 
@@ -24,37 +25,37 @@ void BinaryTree::destroyTree(const TreeNode* node) {
     }
 }
 
-// Insert a node into the tree
-void BinaryTree::insert(long long key, long long value) {
-    insert(root, key, value);
-}
-
-void BinaryTree::insert(TreeNode*& node, long long _key, long long _value) {
+// Internal insert method (uses KeyValue objects)
+void BinaryTree::insert(TreeNode*& node, KeyValue kv) {
     if (node == nullptr) {
-        node = new TreeNode(_key, _value);
-    } else if (_key < node->key) {
-        insert(node->left, _key, _value);
+        // If the node is null, create a new TreeNode with the KeyValue
+        node = new TreeNode(kv);
+    } else if (kv < node->keyValue) {
+        // Compare KeyValue instances directly using operator<
+        insert(node->left, kv);
     } else {
-        insert(node->right, _key, _value);
+        insert(node->right, kv);
     }
 }
 
-// Search for a key in the tree
-bool BinaryTree::search(long long _key) {
-    return search(root, _key);
+
+// Search for a key in the tree using KeyValue
+bool BinaryTree::search(const KeyValue& kv) {
+    return search(root, kv);
 }
 
-bool BinaryTree::search(TreeNode* node, long long _key) {
+bool BinaryTree::search(TreeNode* node, const KeyValue& kv) {
     if (node == nullptr) {
-        return false;
-    } else if (node->key == _key) {
-        return true;
-    } else if (_key < node->key) {
-        return search(node->left, _key);
+        return false;  // Not found
+    } else if (kv < node->keyValue) {
+        return search(node->left, kv);  // Search in the left subtree
+    } else if (node->keyValue < kv) {
+        return search(node->right, kv);  // Search in the right subtree
     } else {
-        return search(node->right, _key);
+        return true;  // Found
     }
 }
+
 
 // Inorder traversal
 void BinaryTree::inorderTraversal() {
@@ -65,7 +66,7 @@ void BinaryTree::inorderTraversal() {
 void BinaryTree::inorderTraversal(TreeNode* node) {
     if (node != nullptr) {
         inorderTraversal(node->left);
-        std::cout << node->key << " ";
+        node->keyValue.printKeyValue();
         inorderTraversal(node->right);
     }
 }
@@ -78,7 +79,7 @@ void BinaryTree::preorderTraversal() {
 
 void BinaryTree::preorderTraversal(TreeNode* node) {
     if (node != nullptr) {
-        std::cout << node->key << " ";
+        node->keyValue.printKeyValue();
         preorderTraversal(node->left);
         preorderTraversal(node->right);
     }
@@ -94,27 +95,30 @@ void BinaryTree::postorderTraversal(TreeNode* node) {
     if (node != nullptr) {
         postorderTraversal(node->left);
         postorderTraversal(node->right);
-        std::cout << node->key << " ";
+        node->keyValue.printKeyValue();
     }
 }
 
-
-
-void BinaryTree::Scan(TreeNode* node, long long small_key, long long large_key, unordered_map<long long, long long>& res) {
-    // Inorder scanning
+// Scan between two keys
+// Scan between two keys using std::map to maintain sorted order
+void BinaryTree::Scan(TreeNode* node, const KeyValue& small_key, const KeyValue& large_key, std::set<KeyValue>& res) {
     if (!node) return;
+
     // Prune left subtree if the current node's key is greater than the small_key
-    if (node->key > small_key) {
+    if (node->keyValue > small_key) {
         Scan(node->left, small_key, large_key, res);
     }
 
     // If the current node's key is within the range, add it to the result map
-    if (node->key >= small_key && node->key <= large_key) {
-        res[node->key] = node->value;
+    if (!(node->keyValue < small_key) && !(large_key < node->keyValue)) {
+        res.insert(node->keyValue);
     }
 
     // Prune right subtree if the current node's key is less than the large_key
-    if (node->key < large_key) {
+    if (node->keyValue < large_key) {
         Scan(node->right, small_key, large_key, res);
     }
 }
+
+
+
