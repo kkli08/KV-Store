@@ -2,7 +2,7 @@
 ![Multi-Platform Unit Tests](https://github.com/kkli08/KV-Store/actions/workflows/cmake-multi-platform.yml/badge.svg)
 
 Stores key-value pairs and allows retrieval of a value based on its key.
-> 2024-09-08 converting into --> template<typename K, typename V> 
+> 2024-09-09 Support Template<typename K, typename V> 
 ```c++
 enum class KeyValueType { INT, LONG, DOUBLE, CHAR, STRING };
 ```
@@ -26,22 +26,27 @@ int memtableSize = 1e3;
 auto MyDBSetMemtableSize = std::make_unique<kvdb::API>(memtableSize);
 MyDBSetMemtableSize->Open("database name");
 ```
-**kvdb::API::Put(int_64 key, int_64 value)**
+**template<typename K, typename V>**
+
+**kvdb::API::Put(K key, V value)**
 > Put key-value pair into the database.
 ```c++
 auto MyDB = new kvdb::API();
-long long key = 1, value = 100;
 MyDB->Open("database name");
-MyDB->Put(key, value);
+MyDB->Put(1, 100);
+MyDB->Put(1.5, 'A');
+MyDB->Put("Hello, World", 1e8LL);
 ```
 **kvdb::API::Get(int_64)**
 > Return value by the key.
 ```c++
 auto MyDB = new kvdb::API();
-long long key = 1, value;
+KeyValue kv;
 MyDB->Open("database name");
-MyDB->Put(key, value);
-value = MyDB->Get(key);
+MyDB->Put(1, 100);
+MyDB->Put(1.5, 'A');
+MyDB->Put("Hello, World", 1e8LL);
+kv = MyDB->Get("Hello, World"); // return kv -> {key: "Hello, World", value: 1e8LL}
 ```
 **kvdb::API::Close()**
 > Close the db, move all the data in memory into disk (SSTs).
@@ -50,13 +55,13 @@ auto MyDB = new kvdb::API();
 MyDB->Open("database name");
 MyDB->Close();
 ```
-**kvdb::API::Scan(int_64, int_64)**
+**kvdb::API::Scan(KeyValue smallestKey, KeyValue largestKey)**
 > Retrieves all KV-pairs in a key range in key order (key1 < key2)
 ```c++
 auto MyDB = new kvdb::API();
-unordered_map<long long, long long> KvPairs;
+set<KeyValue> KvPairs;
 MyDB->Open("database name");
-KvPairs = MyDB->Scan(Key1, Key2);
+KvPairs = MyDB->Scan(smallestKey, largestKey2);
 ```
 **kvdb::API::Update()**
 > Update the data.
@@ -68,6 +73,20 @@ TBA
 ```c++
 TBA
 ```
+
+
+### SST File Layout
+> 2024-09-09
+>
+![SSTLayout](/img/SSTFileLayout_withInFileIdx.jpg)
+
+### UML
+> 2024-09-02 
+> 
+![UML](/img/kvdb_s1_uml.jpg)
+
+### Dataflow Diagram
+![DFD](/img/kvdb_lv0.jpg)
 
 ### Benchmark
 
@@ -85,11 +104,3 @@ TBA
 | Windows       | MSVC (cl)      | ✅ |
 | macOS         | Clang          | ✅ |
 | macOS         | GCC            | ✅ |
-
-### UML
-> 2024-09-02 
-> 
-![UML](/img/kvdb_s1_uml.jpg)
-
-### Dataflow Diagram
-![DFD](/img/kvdb_lv0.jpg)
