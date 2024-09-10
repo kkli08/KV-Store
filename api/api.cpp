@@ -66,7 +66,7 @@ namespace kvdb {
      */
     if(info.largest_key >= info.smallest_key) {
       // non-empty SST file
-      // index->addSST(info->fileName, info->smallest_key, info->smallest_key);
+      index->addSST(info.fileName, info.smallest_key, info.smallest_key);
     }
     // set flag
     is_open = false;
@@ -95,10 +95,10 @@ namespace kvdb {
     // Check if the returned KeyValue is empty
     if (result.isEmpty()) {
       // If the result is empty, check in the SSTs
-      // result = index->Search(keyValue);
-      // if (!result.isEmpty()) {
-      //     return result;
-      // }
+      result = index->Search(keyValue);
+      if (!result.isEmpty()) {
+          return result;
+      }
     }
 
     // Return the result (either from memtable or SSTs)
@@ -123,7 +123,7 @@ namespace kvdb {
 
     // step 2:
     // scan the SSTs from youngest to oldest
-    // index->Scan(small_key, large_key, result);
+    index->Scan(small_key, large_key, result);
 
     return result;
   }
@@ -157,15 +157,6 @@ namespace kvdb {
     }
   }
 
-  // Debug helper function
-  // void API::IndexCheck() {
-  //   cout << "\n-->Inside API::IndexCheck()" << endl;
-  //   for(auto& info : index->getSSTsIndex()) {
-  //     cout << info->filename << "'s smallest key: " << info->smallest_key << " and largest key: " << info->largest_key << endl;
-  //   }
-  //   cout << "\n-->Inside Index.sst" << endl;
-  //   index->printSSRsInFile();
-  // }
 
 
 }

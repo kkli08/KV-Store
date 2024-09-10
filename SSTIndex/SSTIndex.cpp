@@ -230,6 +230,12 @@ KeyValue SSTIndex::Search(KeyValue _key) {
   for (auto it = index.rbegin(); it != index.rend(); ++it) {
     SSTInfo* sst_info = *it;
 
+    // Check if the range overlaps with the key range in this SST file
+    if (sst_info->largest_key < _key || sst_info->smallest_key > _key) {
+      // No overlap, skip this SST file
+      // cout << "skip" << ++i << endl;
+      continue;
+    }
     // Use SearchInSST to search for the key in the current SST file
     KeyValue result = SearchInSST(sst_info->filename, _key);
 
@@ -246,9 +252,17 @@ KeyValue SSTIndex::Search(KeyValue _key) {
 
 // scan in all SST files [from OLDEST to YOUNGEST]
 void SSTIndex::Scan(KeyValue smallestKey, KeyValue largestKey, set<KeyValue>& res) {
+  int i = 0;
   // Traverse the deque from the youngest (back) to the oldest (front)
   for (auto it = index.rbegin(); it != index.rend(); ++it) {
     SSTInfo* sst_info = *it;
+
+    // Check if the range overlaps with the key range in this SST file
+    if (sst_info->largest_key < smallestKey || sst_info->smallest_key > largestKey) {
+      // No overlap, skip this SST file
+      // cout << "skip" << ++i << endl;
+      continue;
+    }
 
     // Scan the key-value pairs in the current SST file that fall within the specified range
     ScanInSST(smallestKey, largestKey, sst_info->filename, res);

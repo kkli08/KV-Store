@@ -12,313 +12,325 @@
 namespace fs = std::filesystem;
 using namespace kvdb;
 
-// TEST(APITest, OpenNewDatabase) {
-//     API* api = new API();
-//     std::string db_name = "test_db";
-//
-//     // Ensure the directory does not exist before the test
-//     if (fs::exists(db_name)) {
-//         fs::remove_all(db_name);
-//     }
-//
-//     testing::internal::CaptureStdout();
-//     api->Open(db_name);
-//     std::string output = testing::internal::GetCapturedStdout();
-//
-//     // Verify the directory was created
-//     EXPECT_TRUE(fs::exists(db_name));
-//     // Verify output
-//     EXPECT_TRUE(output.find("Created database directory: " + db_name) != std::string::npos);
-//
-//     // Clean up
-//     delete api;
-//     fs::remove_all(db_name);  // Clean up the created directory
-// }
-//
-// TEST(APITest, OpenExistingDatabase) {
-//     API* api = new API();
-//     std::string db_name = "test_db_existing";
-//
-//     // Create the directory before the test
-//     if (!fs::exists(db_name)) {
-//         fs::create_directory(db_name);
-//     }
-//
-//     testing::internal::CaptureStdout();
-//     api->Open(db_name);
-//     std::string output = testing::internal::GetCapturedStdout();
-//
-//     // Verify the directory exists
-//     EXPECT_TRUE(fs::exists(db_name));
-//     // Verify output
-//     EXPECT_TRUE(output.find("Existed database directory: " + db_name) != std::string::npos);
-//
-//     // Clean up
-//     delete api;
-//     fs::remove_all(db_name);  // Clean up the created directory
-// }
-//
-//
-// // replace destructor with smart pointer
-//
-// // TEST(APITest, CloseAndCleanup) {
-// //     API* api = new API();
-// //     std::string db_name = "test_db_cleanup";
-// //
-// //     // Open a database to initialize the API
-// //     api->Open(db_name);
-// //
-// //     testing::internal::CaptureStdout();
-// //     api->Close();
-// //     std::string output = testing::internal::GetCapturedStdout();
-// //
-// //     // Check that the cleanup message is printed
-// //     EXPECT_TRUE(output.find("Cleanup completed.") != std::string::npos);
-// //
-// //     // Verify that memtable is cleaned up (set to nullptr)
-// //     EXPECT_EQ(api->GetMemtable(), nullptr);  // Assuming GetMemtable() is a getter for the memtable pointer
-// //
-// //     // Clean up
-// //     delete api;
-// //     fs::remove_all(db_name);  // Clean up the created directory
-// // }
-//
-// TEST(APITest, reOpen) {
-//     API* api = new API();
-//     std::string db_name = "test_db_reopen";
-//     api->Open(db_name);
-//     api->Close();
-//     // api = new API();
-//     api->Open(db_name);
-//     api->Close();
-// }
-//
-// // 10 k pairs Put & Get
-// TEST(APITest, InsertAndRetrieve10KKeyValuePairs) {
-//     API* api = new API();
-//     std::string db_name = "test_db_performance";
-//
-//     // Ensure the directory exists before the test
-//     if (!fs::exists(db_name)) {
-//         fs::create_directory(db_name);
-//     }
-//
-//     // Open the database
-//     api->Open(db_name);
-//
-//     // Measure the time taken to put 10,000 key-value pairs
-//     auto start_put = std::chrono::high_resolution_clock::now();
-//     for (long long i = 1; i <= 10000; ++i) {
-//         api->Put(i, i * 10);  // Inserting key i with value i*10
-//     }
-//     cout << endl << "Perform Index Check: " << endl;
-//     api->IndexCheck();
-//     auto end_put = std::chrono::high_resolution_clock::now();
-//     auto put_duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_put - start_put).count();
-//
-//     std::cout << "Total time taken for Put operations: " << put_duration << " ms" << std::endl;
-//
-//     // Measure the time taken to get 10,000 key-value pairs
-//     auto start_get = std::chrono::high_resolution_clock::now();
-//     bool all_values_correct = true;
-//     for (long long i = 1; i <= 10000; ++i) {
-//         long long value = api->Get(i);
-//         if (value != i * 10) {
-//             all_values_correct = false;
-//             break;
-//         }
-//     }
-//     auto end_get = std::chrono::high_resolution_clock::now();
-//     auto get_duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_get - start_get).count();
-//     double avg_get_time_per_search = static_cast<double>(get_duration) / 10000.0;
-//
-//     std::cout << "Total time taken for Get operations: " << get_duration << " ms" << std::endl;
-//     std::cout << "Average time per Get operation: " << avg_get_time_per_search << " ms" << std::endl;
-//
-//     // Verify all values were retrieved correctly
-//     EXPECT_TRUE(all_values_correct);
-//
-//     // Close the database and clean up
-//     api->Close();
-//     delete api;
-//     fs::remove_all(db_name);  // Clean up the created directory
-// }
-//
-// TEST(APITest, InsertAndRetrieve1MKeyValuePairs) {
-//     const long long num_pairs = 1e5;  // 1 million key-value pairs
-//     API* api = new API();
-//     std::string db_name = "test_db_performance_1M";
-//
-//     // Ensure the directory exists before the test
-//     if (!fs::exists(db_name)) {
-//         fs::create_directory(db_name);
-//     }
-//
-//     // Open the database
-//     api->Open(db_name);
-//
-//     // Measure the time taken to put 1 million key-value pairs
-//     auto start_put = std::chrono::high_resolution_clock::now();
-//     for (long long i = 1; i <= num_pairs; ++i) {
-//         api->Put(i, i * 10);  // Inserting key i with value i*10
-//     }
-//
-//     // Debug
-//     // api->IndexCheck();
-//
-//     auto end_put = std::chrono::high_resolution_clock::now();
-//     auto put_duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_put - start_put).count();
-//
-//     // int failures = 0;
-//     std::cout << "Total time taken for Put operations (1M pairs): " << put_duration << " ms" << std::endl;
-//
-//     // Measure the time taken to get 1 million key-value pairs
-//     auto start_get = std::chrono::high_resolution_clock::now();
-//     bool all_values_correct = true;
-//     for (long long i = 1; i <= num_pairs; ++i) {
-//         long long value = api->Get(i);
-//         if (value != i * 10) {
-//             all_values_correct = false;
-//             // failures++;
-//             break;
-//         }
-//     }
-//     auto end_get = std::chrono::high_resolution_clock::now();
-//     auto get_duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_get - start_get).count();
-//     double avg_get_time_per_search = static_cast<double>(get_duration) / num_pairs;
-//
-//     std::cout << "Total time taken for Get operations (1M pairs): " << get_duration << " ms" << std::endl;
-//     std::cout << "Average time per Get operation: " << avg_get_time_per_search << " ms" << std::endl;
-//     // std::cout << "Failures: " << failures << std::endl;
-//     // Verify all values were retrieved correctly
-//     EXPECT_TRUE(all_values_correct);
-//
-//     // Close the database and clean up
-//     api->Close();
-//     delete api;
-//     fs::remove_all(db_name);  // Clean up the created directory
-// }
-//
-// /*
-//  * Unit Tests for SCAN(LL k1, LL k2)
-//  *
-//  */
-// TEST(APITest, ScanAcrossSSTsAndMemtable) {
-//     API* api = new API();
-//     std::string db_name = "test_db";
-//
-//     // Open the database
-//     api->Open(db_name);
-//
-//     // Insert 1e5 key-value pairs using the API's Put method
-//     for (long long i = 1; i <= 1e6; ++i) {
-//         api->Put(i, i * 10);
-//     }
-//
-//     // Perform a scan that includes both SST files and the memtable
-//     long long small_key = 150000;
-//     long long large_key = 600000;
-//     unordered_map<long long, long long> result = api->Scan(small_key, large_key);
-//
-//     // Validate the results
-//     EXPECT_EQ(result.size(), large_key - small_key + 1);
-//     for (long long i = small_key; i <= large_key; ++i) {
-//         EXPECT_EQ(result[i], i * 10);
-//     }
-//
-//     // Cleanup
-//     api->Close();
-//     delete api;
-//     fs::remove_all(db_name);  // Remove the test database directory
-// }
-//
-// TEST(APITest, ScanWithOverlappingSSTAndMemtableData) {
-//     API* api = new API();
-//     std::string db_name = "test_db";
-//
-//     // Open the database
-//     api->Open(db_name);
-//
-//     // Insert 1e5 key-value pairs using the API's Put method
-//     for (long long i = 1; i <= 1e6; ++i) {
-//         api->Put(i, i * 10);
-//     }
-//
-//     // Flush memtable to SST (simulate this by closing and reopening the database)
-//     api->Close();
-//     api->Open(db_name);
-//
-//     // Insert another set of data into the memtable
-//     for (long long i = 1e5 + 1; i <= 1e5 + 5000; ++i) {
-//         api->Put(i, i * 10);
-//     }
-//
-//     // Perform a scan that overlaps SST files and the memtable
-//     long long small_key = 99000;
-//     long long large_key = 105000;
-//     unordered_map<long long, long long> result = api->Scan(small_key, large_key);
-//
-//     // Validate the results
-//     EXPECT_EQ(result.size(), large_key - small_key + 1);
-//     for (long long i = small_key; i <= large_key; ++i) {
-//         EXPECT_EQ(result[i], i * 10);
-//     }
-//
-//     // Cleanup
-//     api->Close();
-//     delete api;
-//     fs::remove_all(db_name);  // Remove the test database directory
-// }
-//
-// TEST(APITest, BenchmarkScanWith1BillionPairs) {
-//     const long long num_pairs = 1e7;  // 10 million key-value pairs
-//     const long long scan_range = 1e6; // Scan range of 1 million keys
-//     const long long scan_start_key = num_pairs / 2 - scan_range / 2; // Start scanning from the middle of the dataset
-//     const long long scan_end_key = scan_start_key + scan_range - 1;
-//
-//     API* api = new API();
-//     std::string db_name = "test_db_benchmark_scan";
-//
-//     // Ensure the directory exists before the test
-//     if (!fs::exists(db_name)) {
-//         fs::create_directory(db_name);
-//     }
-//
-//     // Open the database
-//     api->Open(db_name);
-//
-//     // Measure the time taken to put 1 billion key-value pairs
-//     auto start_put = std::chrono::high_resolution_clock::now();
-//     for (long long i = 1; i <= num_pairs; ++i) {
-//         api->Put(i, i * 10);  // Inserting key i with value i*10
-//     }
-//     auto end_put = std::chrono::high_resolution_clock::now();
-//     auto put_duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_put - start_put).count();
-//     std::cout << "Total time taken for Put operations (10 million pairs): " << put_duration << " ms" << std::endl;
-//
-//     // Measure the time taken for the Scan operation
-//     auto start_scan = std::chrono::high_resolution_clock::now();
-//     unordered_map<long long, long long> result = api->Scan(scan_start_key, scan_end_key);
-//     auto end_scan = std::chrono::high_resolution_clock::now();
-//     auto scan_duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_scan - start_scan).count();
-//     double avg_scan_time_per_key = static_cast<double>(scan_duration) / scan_range;
-//
-//     std::cout << "Total time taken for Scan operation (1 million range): " << scan_duration << " ms" << std::endl;
-//     std::cout << "Average time per key in Scan operation: " << avg_scan_time_per_key << " ms" << std::endl;
-//
-//     // Verify that the scan result is correct
-//     EXPECT_EQ(result.size(), scan_range);
-//     bool all_values_correct = true;
-//     for (long long i = scan_start_key; i <= scan_end_key; ++i) {
-//         if (result[i] != i * 10) {
-//             all_values_correct = false;
-//             break;
-//         }
-//     }
-//     EXPECT_TRUE(all_values_correct);
-//
-//     // Close the database and clean up
-//     api->Close();
-//     delete api;
-//     fs::remove_all(db_name);  // Clean up the created directory
-// }
+TEST(APITest, OpenNewDatabase) {
+    API* api = new API();
+    std::string db_name = "test_db";
+
+    // Ensure the directory does not exist before the test
+    if (fs::exists(db_name)) {
+        fs::remove_all(db_name);
+    }
+
+    testing::internal::CaptureStdout();
+    api->Open(db_name);
+    std::string output = testing::internal::GetCapturedStdout();
+
+    // Verify the directory was created
+    EXPECT_TRUE(fs::exists(db_name));
+    // Verify output
+    EXPECT_TRUE(output.find("Created database directory: " + db_name) != std::string::npos);
+
+    // Clean up
+    delete api;
+    fs::remove_all(db_name);  // Clean up the created directory
+}
+
+TEST(APITest, OpenExistingDatabase) {
+    API* api = new API();
+    std::string db_name = "test_db_existing";
+
+    // Create the directory before the test
+    if (!fs::exists(db_name)) {
+        fs::create_directory(db_name);
+    }
+
+    testing::internal::CaptureStdout();
+    api->Open(db_name);
+    std::string output = testing::internal::GetCapturedStdout();
+
+    // Verify the directory exists
+    EXPECT_TRUE(fs::exists(db_name));
+    // Verify output
+    EXPECT_TRUE(output.find("Existed database directory: " + db_name) != std::string::npos);
+
+    // Clean up
+    delete api;
+    fs::remove_all(db_name);  // Clean up the created directory
+}
+
+
+TEST(APITest, reOpen) {
+    API* api = new API();
+    std::string db_name = "test_db_reopen";
+    api->Open(db_name);
+    api->Close();
+    // api = new API();
+    api->Open(db_name);
+    api->Close();
+}
+
+TEST(APITest, BasicInsertAndGet) {
+    // Set memtable size and create API instance
+    int memtableSize = 1000;
+    auto db = std::make_unique<kvdb::API>(memtableSize);
+    db->Open("test_db");
+
+    // Insert key-value pairs (int key, int value)
+    db->Put(1, 100);
+    db->Put(2, 200);
+
+    // Retrieve the values using the keys
+    KeyValue result1 = db->Get(KeyValue(1, ""));
+    KeyValue result2 = db->Get(KeyValue(2, ""));
+
+    // Verify the returned values are correct
+    EXPECT_EQ(std::get<int>(result1.getValue()), 100);
+    EXPECT_EQ(std::get<int>(result2.getValue()), 200);
+
+    // Clean up
+    db->Close();
+    fs::remove_all("test_db");
+}
+
+TEST(APITest, StringInsertAndGet) {
+    // Set memtable size and create API instance
+    int memtableSize = 1000;
+    auto db = std::make_unique<kvdb::API>(memtableSize);
+    db->Open("test_db");
+
+    // Insert key-value pairs (string key, string value)
+    db->Put("key1", "value1");
+    db->Put("key2", "value2");
+
+    // Retrieve the values using the keys
+    KeyValue result1 = db->Get(KeyValue("key1", ""));
+    KeyValue result2 = db->Get(KeyValue("key2", ""));
+
+    // Verify the returned values are correct
+    EXPECT_EQ(std::get<std::string>(result1.getValue()), "value1");
+    EXPECT_EQ(std::get<std::string>(result2.getValue()), "value2");
+
+    // Clean up
+    db->Close();
+    fs::remove_all("test_db");
+}
+
+
+TEST(APITest, MixedDataTypesInsertAndGet) {
+    // Set memtable size and create API instance
+    int memtableSize = 1000;
+    auto db = std::make_unique<kvdb::API>(memtableSize);
+    db->Open("test_db");
+
+    // Insert key-value pairs with different types
+    db->Put(1, "value1");
+    db->Put("key2", 200);
+    db->Put(3.5, "value3");
+    db->Put("key4", 400.5);
+
+    // Retrieve the values using the keys
+    KeyValue result1 = db->Get(KeyValue(1, ""));
+    KeyValue result2 = db->Get(KeyValue("key2", ""));
+    KeyValue result3 = db->Get(KeyValue(3.5, ""));
+    KeyValue result4 = db->Get(KeyValue("key4", ""));
+
+    // Verify the returned values are correct
+    EXPECT_EQ(std::get<std::string>(result1.getValue()), "value1");
+    EXPECT_EQ(std::get<int>(result2.getValue()), 200);
+    EXPECT_EQ(std::get<std::string>(result3.getValue()), "value3");
+    EXPECT_EQ(std::get<double>(result4.getValue()), 400.5);
+
+    // Clean up
+    db->Close();
+    fs::remove_all("test_db");
+}
+
+TEST(APITest, InsertAndGetLargeNumberOfKVPairs) {
+    // Set memtable size and create API instance
+    int memtableSize = 1000;
+    auto db = std::make_unique<kvdb::API>(memtableSize);
+    db->Open("test_db");
+
+    // Insert 100,000 key-value pairs (int key, int value)
+    cout << "Inserting 100,000 key-value pairs ..." << endl;
+    for (int i = 0; i < 100000; ++i) {
+        db->Put(i, i * 10);
+    }
+    cout << "Put operations finished. " << endl;
+    cout << "Retrieve 10,000 key-value pairs..." << endl;
+    // Retrieve 10,000 key-value pairs and verify them
+    for (int i = 400; i < 500; ++i) {
+        KeyValue result = db->Get(KeyValue(i, ""));
+        EXPECT_EQ(std::get<int>(result.getValue()), i * 10);
+    }
+    cout << "Retrieve operations finished. " << endl;
+    // Clean up
+    db->Close();
+    fs::remove_all("test_db");
+}
+
+
+/*
+ * API::Scan
+ */
+TEST(APITest, BasicScanRange) {
+    // Set memtable size and create API instance
+    int memtableSize = 1000;
+    auto db = std::make_unique<kvdb::API>(memtableSize);
+    db->Open("test_db");
+
+    // Insert key-value pairs (int key, int value)
+    db->Put(1, 100);
+    db->Put(2, 200);
+    db->Put(3, 300);
+    db->Put(4, 400);
+    db->Put(5, 500);
+
+    // Perform a scan for key-value pairs between 2 and 4
+    set<KeyValue> resultSet = db->Scan(KeyValue(2, ""), KeyValue(4, ""));
+
+    // Verify the result
+    ASSERT_EQ(resultSet.size(), 3);
+    auto it = resultSet.begin();
+    EXPECT_EQ(std::get<int>(it->getKey()), 2);
+    EXPECT_EQ(std::get<int>(it->getValue()), 200);
+    ++it;
+    EXPECT_EQ(std::get<int>(it->getKey()), 3);
+    EXPECT_EQ(std::get<int>(it->getValue()), 300);
+    ++it;
+    EXPECT_EQ(std::get<int>(it->getKey()), 4);
+    EXPECT_EQ(std::get<int>(it->getValue()), 400);
+
+    // Clean up
+    db->Close();
+    fs::remove_all("test_db");
+}
+
+TEST(APITest, ScanNonExistentRange) {
+    // Set memtable size and create API instance
+    int memtableSize = 1000;
+    auto db = std::make_unique<kvdb::API>(memtableSize);
+    db->Open("test_db");
+
+    // Insert key-value pairs
+    db->Put(1, 100);
+    db->Put(2, 200);
+    db->Put(3, 300);
+
+    // Perform a scan for a range with no matching key-value pairs
+    set<KeyValue> resultSet = db->Scan(KeyValue(10, ""), KeyValue(20, ""));
+
+    // Verify that no key-value pairs were found
+    EXPECT_EQ(resultSet.size(), 0);
+
+    // Clean up
+    db->Close();
+    fs::remove_all("test_db");
+}
+
+
+TEST(APITest, ScanSingleKeyValuePair) {
+    // Set memtable size and create API instance
+    int memtableSize = 1000;
+    auto db = std::make_unique<kvdb::API>(memtableSize);
+    db->Open("test_db");
+
+    // Insert key-value pairs
+    db->Put(1, 100);
+    db->Put(2, 200);
+    db->Put(3, 300);
+
+    // Perform a scan for a single key-value pair (key = 2)
+    set<KeyValue> resultSet = db->Scan(KeyValue(2, ""), KeyValue(2, ""));
+
+    // Verify that only one key-value pair was found
+    ASSERT_EQ(resultSet.size(), 1);
+    auto it = resultSet.begin();
+    EXPECT_EQ(std::get<int>(it->getKey()), 2);
+    EXPECT_EQ(std::get<int>(it->getValue()), 200);
+
+    // Clean up
+    db->Close();
+    fs::remove_all("test_db");
+}
+
+TEST(APITest, LargeScaleScan) {
+    // Set memtable size and create API instance
+    int memtableSize = 1000;
+    auto db = std::make_unique<kvdb::API>(memtableSize);
+    db->Open("test_db");
+
+    // Insert 1000 key-value pairs
+    for (int i = 0; i < 1000; ++i) {
+        db->Put(i, i * 10);
+    }
+
+    // Perform a scan for key-value pairs between 100 and 900
+    set<KeyValue> resultSet = db->Scan(KeyValue(100, ""), KeyValue(900, ""));
+
+    // Verify that the correct number of key-value pairs were found
+    EXPECT_EQ(resultSet.size(), 801);
+
+    // Clean up
+    db->Close();
+    fs::remove_all("test_db");
+}
+
+TEST(APITest, ScanForStringKeyValuePairs) {
+    // Set memtable size and create API instance
+    int memtableSize = 1000;
+    auto db = std::make_unique<kvdb::API>(memtableSize);
+    db->Open("test_db");
+
+    // Insert key-value pairs with string keys and values
+    db->Put("a", "value1");
+    db->Put("b", "value2");
+    db->Put("c", "value3");
+
+    // Perform a scan for key-value pairs between "a" and "b"
+    set<KeyValue> resultSet = db->Scan(KeyValue("a", ""), KeyValue("b", ""));
+
+    // Verify that the correct key-value pairs were found
+    ASSERT_EQ(resultSet.size(), 2);
+    auto it = resultSet.begin();
+    EXPECT_EQ(std::get<std::string>(it->getKey()), "a");
+    EXPECT_EQ(std::get<std::string>(it->getValue()), "value1");
+    ++it;
+    EXPECT_EQ(std::get<std::string>(it->getKey()), "b");
+    EXPECT_EQ(std::get<std::string>(it->getValue()), "value2");
+
+    // Clean up
+    db->Close();
+    fs::remove_all("test_db");
+}
+
+// Performance issue
+TEST(APITest, LargeScaleInsertAndScanRange) {
+    // Set memtable size and create API instance
+    int memtableSize = 1000;
+    auto db = std::make_unique<kvdb::API>(memtableSize);
+    db->Open("test_db");
+
+    // Insert 100,000 key-value pairs (int key, int value)
+    for (int i = 0; i < 1000000; ++i) {
+        // db->Put(i, i * 10);  // Key is i, Value is i * 10
+        db->Put(i, "value_"+std::to_string(i));
+    }
+
+    // Perform a scan for key-value pairs between 50,000 and 51,000
+    set<KeyValue> resultSet = db->Scan(KeyValue(1, ""), KeyValue(50000, ""));
+
+    // Verify that 1,001 key-value pairs were found
+    ASSERT_EQ(resultSet.size(), 50000);
+
+    // Verify the content of the result set
+    auto it = resultSet.begin();
+    for (int i = 1; i <= 50000; ++i, ++it) {
+        EXPECT_EQ(std::get<int>(it->getKey()), i);
+        // EXPECT_EQ(std::get<int>(it->getValue()), i * 10);
+    }
+
+    // Clean up
+    db->Close();
+    fs::remove_all("test_db");
+}
