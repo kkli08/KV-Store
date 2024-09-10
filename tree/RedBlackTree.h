@@ -10,6 +10,7 @@
 #include <utility>
 #include <vector>
 #include <unordered_map>
+#include <functional>
 using namespace std;
 
 class RedBlackTree final : public BinaryTree {
