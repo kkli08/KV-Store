@@ -26,6 +26,9 @@ class RedBlackTree final : public BinaryTree {
         int getColor(TreeNode *&);  // done tested
         int getBlackHeight(TreeNode *); // added tested
 
+        void inOrderTraversal(std::function<void(const KeyValue&)> callback) const;
+        void inOrderTraversal(TreeNode* node, std::function<void(const KeyValue&)> callback) const;
+
 
     protected:
         void rotateLeft(TreeNode *&); // done

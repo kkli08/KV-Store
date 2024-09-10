@@ -8,18 +8,89 @@
 #include <iostream>
 #include <unordered_map>
 #include <string>
+#include "FileManager.h"
 using namespace std;
 
 #define RECORDE_SIZE 18
 
+/*
+ * Index.sst SSTIndexHeader Methods
+ *
+ */
+uint32_t SSTIndexHeader::calculateChecksum() const {
+  // Simple checksum: sum up the sizes of the header fields
+  return sizeof(num_files) + sizeof(header_checksum);
+}
+
+void SSTIndexHeader::serialize(std::ofstream& file) const {
+  file.write(reinterpret_cast<const char*>(&num_files), sizeof(num_files));
+  file.write(reinterpret_cast<const char*>(&header_checksum), sizeof(header_checksum));
+}
+
+SSTIndexHeader SSTIndexHeader::deserialize(std::ifstream& file) {
+  SSTIndexHeader header;
+  file.read(reinterpret_cast<char*>(&header.num_files), sizeof(header.num_files));
+  file.read(reinterpret_cast<char*>(&header.header_checksum), sizeof(header.header_checksum));
+  return header;
+}
+
+/*
+ * Index.sst SerializedIndexSSTInfo Methods
+ *
+ */
+void SerializedIndexSSTInfo::serializeFileName(std::ofstream& file) const {
+  uint32_t filename_len = filename.size();
+
+  // Write the length of the filename
+  file.write(reinterpret_cast<const char*>(&filename_len), sizeof(filename_len));
+
+  // Write the actual filename string
+  file.write(filename.data(), filename_len);
+}
+
+void SerializedIndexSSTInfo::serialize(std::ofstream& file) const {
+  // Serialize the filename
+  serializeFileName(file);
+
+  // Serialize the smallest key
+  smallest_key.serialize(file);
+
+  // Serialize the largest key
+  largest_key.serialize(file);
+}
+
+SerializedIndexSSTInfo SerializedIndexSSTInfo::deserialize(std::ifstream& file) {
+  SerializedIndexSSTInfo sstInfo;
+
+  // Deserialize the filename
+  uint32_t filename_len;
+  file.read(reinterpret_cast<char*>(&filename_len), sizeof(filename_len));
+
+  sstInfo.filename.resize(filename_len);
+  file.read(&sstInfo.filename[0], filename_len);  // Read the actual filename
+
+  // Deserialize the smallest key
+  sstInfo.smallest_key = SerializedKeyValue::deserialize(file);
+
+  // Deserialize the largest key
+  sstInfo.largest_key = SerializedKeyValue::deserialize(file);
+
+  return sstInfo;
+}
+
+
 SSTIndex::SSTIndex() {
   path = fs::path("defaultDB");
+  if (!fs::exists(path)) {
+    fs::create_directories(path);  // Ensure the directory exists
+  }
 }
 
 // Retrieve all SSTs into index (e.g., when reopening the database)
-void SSTIndex::getAllSSTs(){
-  // Check if the file exists
-  std::ifstream infile(path / "Index.sst");
+void SSTIndex::getAllSSTs() {
+  // Open the file "Index.sst" in binary mode
+  std::ifstream infile(path / "Index.sst", std::ios::binary);
+
   if (!infile.is_open()) {
     // If the file doesn't exist, just return
     return;
@@ -39,98 +110,73 @@ void SSTIndex::getAllSSTs(){
   // Clear the current index to avoid duplication
   index.clear();
 
-  std::string line;
-  while (std::getline(infile, line)) {
-    std::istringstream iss(line);
-    std::string filename;
-    long long smallest_key, largest_key;
+  // Step 1: Deserialize the header
+  SSTIndexHeader header = SSTIndexHeader::deserialize(infile);
 
-    if (!(iss >> filename >> smallest_key >> largest_key)) {
-      throw std::runtime_error("Failed to parse Index.sst.");
-    }
+  // Step 2: Loop through and deserialize each SST entry
+  for (uint32_t i = 0; i < header.num_files; ++i) {
+    // Deserialize the individual SerializedIndexSSTInfo
+    SerializedIndexSSTInfo sstInfo = SerializedIndexSSTInfo::deserialize(infile);
 
-    addSST(filename, smallest_key, largest_key);
+    // Convert SerializedIndexSSTInfo into SSTInfo and add it to the index
+    addSST(sstInfo.filename, sstInfo.smallest_key.kv, sstInfo.largest_key.kv);
   }
 
+  // Close the input file
   infile.close();
 }
 
 
-void SSTIndex::printSSRsInFile() {
-  // Construct the full path to the "Index.sst" file
-  fs::path indexFilePath = path / "Index.sst";
-
-  // Check if the directory exists
-  if (!fs::exists(path)) {
-    std::cerr << "Directory does not exist: " << path << std::endl;
-    return;
-  }
-
-  // Check if the file exists
-  if (!fs::exists(indexFilePath)) {
-    std::cerr << "File does not exist: " << indexFilePath << std::endl;
-    return;
-  }
-
-  // Check if the file exists and open it
-  std::ifstream infile(indexFilePath);
-  if (!infile.is_open()) {
-    std::cerr << "Failed to open file: " << indexFilePath << std::endl;
-    return;
-  }
-
-  // Check if the file is empty
-  infile.seekg(0, std::ios::end);
-  if (infile.tellg() == 0) {
-    std::cout << "The file is empty." << std::endl;
-    infile.close();
-    return;
-  }
-
-  // Reset the file pointer to the beginning
-  infile.seekg(0, std::ios::beg);
-
-  // Read and print each line in the file
-  std::string line;
-  while (std::getline(infile, line)) {
-    std::cout << line << std::endl;
-  }
-
-  infile.close();
-}
 
 // flush index info into "Index.sst"
 void SSTIndex::flushToDisk() {
   // Attempt to open (or create) the file "Index.sst"
-  std::ofstream outfile(path / "Index.sst", std::ios::out | std::ios::trunc);
+  std::ofstream outfile(path / "Index.sst", std::ios::binary | std::ios::trunc);
 
   if (!outfile.is_open()) {
-    throw std::runtime_error("Failed to open Index.sst for writing.");
+    throw std::runtime_error("SSTIndex::flushToDisk() >>>> Failed to open Index.sst for writing.");
   }
+
+  // Step 1: Write the SSTIndexHeader
+  SSTIndexHeader header;
+  header.num_files = index.size();
+  header.header_checksum = header.calculateChecksum();
+  header.serialize(outfile);
+
+  // Step 2: Serialize and write each SSTInfo in the deque to the file
   for (const auto& sst_info : index) {
-    outfile << sst_info->filename << " "
-            << sst_info->smallest_key << " "
-            << sst_info->largest_key << "\n";
+    SerializedIndexSSTInfo serialized_info;
+    serialized_info.filename = sst_info->filename;
+    serialized_info.smallest_key = SerializedKeyValue{sst_info->smallest_key, serialized_info.smallest_key.calculateChecksum()};
+    serialized_info.largest_key = SerializedKeyValue{sst_info->largest_key, serialized_info.largest_key.calculateChecksum()};
+
+    serialized_info.serialize(outfile);  // Serialize and write to the file
   }
+
+  // Step 3: Close the file
   outfile.close();
   if (!outfile) {
-    throw std::runtime_error("Failed to write to Index.sst.");
+    throw std::runtime_error("SSTIndex::flushToDisk() >>>> Failed to write to Index.sst.");
   }
-
+  // clear index
+  index.clear();
 }
 
+
 // Add a new SST to the index
-void SSTIndex::addSST(const string& filename, long long smallest_key, long long largest_key){
+void SSTIndex::addSST(const string& filename, KeyValue smallest_key, KeyValue largest_key){
   SSTInfo* info = new SSTInfo{filename, smallest_key, largest_key};
   index.push_back(info);
 
-  // Debug Purpose :-D
+  // // Debug Purpose :-D
   // if (!index.empty()) {
   //   SSTInfo* info = index.back();
   //   cout << "\n-->Inside SSTIndex::addSST()" << endl;
-  //   std::cout << info->filename << "'s smallest key: "
-  //             << info->smallest_key << " and largest key: "
-  //             << info->largest_key << std::endl;
+  //   std::cout << info->filename << endl << "Smallest KeyValue:" << endl;
+  //   info->smallest_key.printKeyValue();
+  //   cout << "\nLargest KeyValue:" << endl;
+  //   info->largest_key.printKeyValue();
+  //
   // } else {
   //   std::cout << "The deque is empty, no elements to print." << std::endl;
   // }
@@ -142,164 +188,98 @@ void SSTIndex::set_path(fs::path _path) {
     // If the directory does not exist, create it
     fs::create_directories(_path);
   }
+  fileManager.setDirectory(_path);
   path = _path;
 }
 
 
-// SST file binary search
-// fixed size line: 8 bytes (key) + 1 byte (comma) + 8 bytes (value) + 1 byte (newline)
-long long SSTIndex::SearchInSST(const std::string& filename, long long _key) {
-  std::ifstream infile(path / filename, std::ios::binary);
-  if (!infile.is_open()) {
-    return -1;  // File doesn't exist
+// SST file search by using RedBlackTree* FileManager::loadFromDisk(const std::string& sst_filename);
+KeyValue SSTIndex::SearchInSST(const string& filename, KeyValue _key) {
+  // Append the directory path to the filename
+  fs::path fullFilePath = path / filename;
+
+  // Check if the SST file exists
+  if (!fs::exists(fullFilePath)) {
+    throw std::runtime_error("SSTIndex::SearchInSST() >>>> SST file does not exist: " + fullFilePath.string());
   }
 
-  // Determine the size of the file
-  infile.seekg(0, std::ios::end);
-  std::streampos file_size = infile.tellg();
-  if (file_size == 0) {
-    infile.close();
-    return -1;  // File is empty
+  // Use the FileManager to load the SST file into a RedBlackTree
+  RedBlackTree* tree = fileManager.loadFromDisk(filename);
+
+  // Check if the tree is null or empty (in case the file couldn't be loaded)
+  if (!tree) {
+    throw std::runtime_error("SSTIndex::SearchInSST() >>>> Failed to load SST file: " + fullFilePath.string());
   }
 
-  // Calculate the number of records in the file
-  const long long record_size = RECORDE_SIZE;  // 8 bytes (key) + 1 byte (comma) + 8 bytes (value) + 1 byte (newline)
-  long long num_records = file_size / record_size;
+  // Search for the key in the loaded RedBlackTree
+  KeyValue result = tree->getValue(_key);
 
-  // Initialize binary search bounds
-  long long left = 0;
-  long long right = num_records - 1;
-  long long key, value;
+  // Clean up: delete the tree once we're done
+  delete tree;
 
-  while (left <= right) {
-    // Calculate the midpoint index
-    long long mid = left + (right - left) / 2;
-
-    // Seek directly to the midpoint record
-    infile.seekg(mid * record_size, std::ios::beg);
-
-    // Read the key-value pair at the current position
-    infile.read(reinterpret_cast<char*>(&key), sizeof(long long int));
-    infile.ignore(1);  // Ignore the comma
-    infile.read(reinterpret_cast<char*>(&value), sizeof(long long int));
-    infile.ignore(1);  // Ignore the newline
-
-    if (key == _key) {
-      infile.close();
-      return value;  // Key found, return the associated value
-    } else if (key < _key) {
-      left = mid + 1;  // Move right
-    } else {
-      right = mid - 1;  // Move left
-    }
-  }
-
-  infile.close();
-  return -1;  // Key not found
+  // Return the result of the search
+  return result;
 }
 
 
+
+
 // search value for key
-long long SSTIndex::Search(long long _key) {
+KeyValue SSTIndex::Search(KeyValue _key) {
   // Traverse the deque from the youngest (back) to the oldest (front)
   for (auto it = index.rbegin(); it != index.rend(); ++it) {
     SSTInfo* sst_info = *it;
 
-    // Check if the key might be in this SST file based on the key range
-    if (_key >= sst_info->smallest_key && _key <= sst_info->largest_key) {
-      // Search in this SST file
-      long long value = SearchInSST(sst_info->filename, _key);
-      if (value != -1) {
-        return value;  // Key found, return the value
-      }
+    // Use SearchInSST to search for the key in the current SST file
+    KeyValue result = SearchInSST(sst_info->filename, _key);
+
+    // If the result is not empty, return the found key-value pair
+    if (!result.isEmpty()) {
+      return result;
     }
   }
-  // Key was not found in any SST file
-  return -1;
+
+  // If no result was found, return an empty KeyValue
+  return KeyValue();
 }
+
 
 // scan in all SST files [from OLDEST to YOUNGEST]
-void SSTIndex::Scan(long long small_key, long long large_key, unordered_map<long long, long long>& res) {
-  // Traverse the deque from the oldest (front) to the youngest (back)
-  for (auto it = index.begin(); it != index.end(); ++it) {
+void SSTIndex::Scan(KeyValue smallestKey, KeyValue largestKey, set<KeyValue>& res) {
+  // Traverse the deque from the youngest (back) to the oldest (front)
+  for (auto it = index.rbegin(); it != index.rend(); ++it) {
     SSTInfo* sst_info = *it;
 
-    // Check if the smallest key might be in this SST file based on the key range
-    if (sst_info->largest_key >= small_key && sst_info->smallest_key <= large_key) {
-      // Scan in this SST file
-      ScanInSST(small_key, large_key, sst_info->filename, res);
-    }
+    // Scan the key-value pairs in the current SST file that fall within the specified range
+    ScanInSST(smallestKey, largestKey, sst_info->filename, res);
   }
 }
+
 
 // scan kv-pairs inside sst file
-void SSTIndex::ScanInSST(long long small_key, long long large_key, const string& filename, unordered_map<long long, long long>& res) {
-  // binary search for finding the smallest key k with the range small_key <= k
-  // stop scanning until k > large_key
+void SSTIndex::ScanInSST(KeyValue smallestKey, KeyValue largestKey, const string& filename, set<KeyValue>& resultSet) {
+  // Use the FileManager to load the SST file into a RedBlackTree
+  RedBlackTree* tree = fileManager.loadFromDisk(filename);
 
-  std::ifstream infile(path / filename, std::ios::binary);
-  if (!infile.is_open()) {
-    cerr << "SSTIndex::ScanInSST() : File doesn't exist" << endl; // File doesn't exist
-  }
-  // Determine the size of the file
-  infile.seekg(0, std::ios::end);
-  std::streampos file_size = infile.tellg();
-  if (file_size == 0) {
-    infile.close();
-    cerr << "SSTIndex::ScanInSST() : File is empty" << endl;  // File is empty
+  // Check if the tree is null or empty (in case the file couldn't be loaded)
+  if (!tree) {
+    throw std::runtime_error("SSTIndex::ScanInSST() >>>> Failed to load SST file: " + filename);
   }
 
-  // Calculate the number of records in the file
-  const long long record_size = RECORDE_SIZE;  // 8 bytes (key) + 1 byte (comma) + 8 bytes (value) + 1 byte (newline)
-  long long num_records = file_size / record_size;
+  // Perform an inorder traversal of the tree
+  tree->inOrderTraversal([&](const KeyValue& kv) {
+      // Print all traversed key-values to debug
+      // std::cout << "Traversed Key: " << std::get<int>(kv.getKey()) << ", Value: " << std::get<string>(kv.getValue()) << "\n";
 
-  // Initialize binary search bounds
-  long long left = 0;
-  long long right = num_records - 1;
-  long long key = 0, value = 0;
-  long long start_pos = -1;
+      // Check if the current key is within the specified range [smallestKey, largestKey]
+      if (kv >= smallestKey && kv <= largestKey) {
+          // std::cout << "Key within range: " << std::get<int>(kv.getKey()) << "\n";
+          resultSet.insert(kv);  // Insert into the result set if within range
+      }
+  });
 
-  // Perform binary search to find the smallest key >= small_key
-  while (left <= right) {
-    long long mid = left + (right - left) / 2;
-
-    // Seek directly to the midpoint record
-    infile.seekg(mid * record_size, std::ios::beg);
-
-    // Read the key-value pair at the current position
-    infile.read(reinterpret_cast<char*>(&key), sizeof(long long));
-    infile.ignore(1);  // Ignore the comma
-    infile.read(reinterpret_cast<char*>(&value), sizeof(long long));
-    infile.ignore(1);  // Ignore the newline
-
-    if (key >= small_key) {
-      start_pos = mid;
-      right = mid - 1;  // Move left to find the smallest key >= small_key
-    } else {
-      left = mid + 1;  // Move right
-    }
-  }
-
-  if (start_pos == -1) {
-    infile.close();
-    return;  // No key >= small_key found
-  }
-
-  // Start scanning from the found position
-  infile.seekg(start_pos * record_size, std::ios::beg);
-  while (infile.read(reinterpret_cast<char*>(&key), sizeof(long long))) {
-    infile.ignore(1);  // Ignore the comma
-    infile.read(reinterpret_cast<char*>(&value), sizeof(long long));
-    infile.ignore(1);  // Ignore the newline
-
-    if (key > large_key) {
-      break;  // Stop scanning if the key is out of the specified range
-    }
-
-    // Add the key-value pair to the result map
-    res[key] = value;
-  }
-
-  infile.close();
+  // Clean up: delete the tree once we're done
+  delete tree;
 }
+
 

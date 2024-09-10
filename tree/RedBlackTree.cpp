@@ -16,6 +16,18 @@ void RedBlackTree::setColor(TreeNode *&node, int color){
   node->color = color;
 }
 
+void RedBlackTree::inOrderTraversal(std::function<void(const KeyValue&)> callback) const {
+    inOrderTraversal(root, callback);
+}
+
+void RedBlackTree::inOrderTraversal(TreeNode* node, std::function<void(const KeyValue&)> callback) const {
+    if (node == nullptr) return;
+
+    inOrderTraversal(node->left, callback);  // Visit left subtree
+    callback(node->keyValue);                // Visit current node
+    inOrderTraversal(node->right, callback); // Visit right subtree
+}
+
 // TreeNode* RedBlackTree::getRoot() {
 //     return root;
 // }

@@ -3,6 +3,7 @@
 //
 #include <gtest/gtest.h>
 #include "SSTIndex.h"
+#include "Memtable.h"
 #include <filesystem>
 #include <fstream>
 #include <sstream>
@@ -15,811 +16,785 @@
 namespace fs = std::filesystem;
 
 /*
- * helper functions
+ * SSTIndex Unit Tests
  */
-void createSSTFile(const fs::path& filepath, const std::vector<std::pair<long long, long long>>& kv_pairs) {
-    std::ofstream sst_file(filepath, std::ios::binary);
-    if (!sst_file.is_open()) {
-        throw std::runtime_error("Failed to create SST file: " + filepath.string());
-    }
-
-    for (const auto& pair : kv_pairs) {
-        sst_file.write(reinterpret_cast<const char*>(&pair.first), sizeof(long long));
-        sst_file.write(",", 1);
-        sst_file.write(reinterpret_cast<const char*>(&pair.second), sizeof(long long));
-        sst_file.write("\n", 1);
-    }
-
-    sst_file.close();
-}
-
-void deleteSSTFile(const fs::path& filepath) {
-    if (fs::exists(filepath)) {
-        fs::remove(filepath);
-    }
-}
-
 
 /*
- * UNIT TEST
+ * void SSTIndex::addSST(const string& filename, KeyValue smallest_key, KeyValue largest_key);
  */
+TEST(SSTIndexTest, AddSingleSST) {
+    // Create an SSTIndex instance
+    SSTIndex sstIndex;
 
-TEST(SSTIndexTest, AddSingleSSTEntry) {
-    SSTIndex* index = new SSTIndex();
-    index->set_path("test_db");
+    // Define a filename and key-value pairs for smallest and largest keys
+    string filename = "sst_001.sst";
+    KeyValue smallestKey(1, "one");
+    KeyValue largestKey(100, "hundred");
 
-    index->addSST("sst_1.sst", 10, 100);
+    // Add the SST to the index
+    sstIndex.addSST(filename, smallestKey, largestKey);
 
-    std::deque<SSTInfo*> sst_index = index->getSSTsIndex();
-    ASSERT_EQ(sst_index.size(), 1);
-    EXPECT_EQ(sst_index[0]->filename, "sst_1.sst");
-    EXPECT_EQ(sst_index[0]->smallest_key, 10);
-    EXPECT_EQ(sst_index[0]->largest_key, 100);
-
-    delete index;
-    fs::remove_all("test_db");
-}
-
-TEST(SSTIndexTest, AddMultipleSSTEntries) {
-    SSTIndex* index = new SSTIndex();
-    index->set_path("test_db");
-
-    index->addSST("sst_1.sst", 10, 100);
-    index->addSST("sst_2.sst", 200, 300);
-    index->addSST("sst_3.sst", 400, 500);
-
-    std::deque<SSTInfo*> sst_index = index->getSSTsIndex();
-    ASSERT_EQ(sst_index.size(), 3);
-    EXPECT_EQ(sst_index[0]->filename, "sst_1.sst");
-    EXPECT_EQ(sst_index[1]->filename, "sst_2.sst");
-    EXPECT_EQ(sst_index[2]->filename, "sst_3.sst");
-
-    delete index;
-    fs::remove_all("test_db");
+    // Verify the SST was added correctly
+    deque<SSTInfo*> index = sstIndex.getSSTsIndex();
+    ASSERT_EQ(index.size(), 1);
+    EXPECT_EQ(index.front()->filename, filename);
+    EXPECT_EQ(std::get<int>(index.front()->smallest_key.getKey()), 1);
+    EXPECT_EQ(std::get<string>(index.front()->largest_key.getValue()), "hundred");
 }
 
 
-// Helper function to remove carriage returns (for Windows)
-std::string normalize_line_endings(const std::string& str) {
-    std::string result = str;
-    result.erase(std::remove(result.begin(), result.end(), '\r'), result.end());
-    return result;
+TEST(SSTIndexTest, AddMultipleSSTs) {
+    // Create an SSTIndex instance
+    SSTIndex sstIndex;
+
+    // Add multiple SST files to the index
+    sstIndex.addSST("sst_001.sst", KeyValue(1, "one"), KeyValue(100, "hundred"));
+    sstIndex.addSST("sst_002.sst", KeyValue(101, "hundred and one"), KeyValue(200, "two hundred"));
+
+    // Verify the SST files were added correctly
+    deque<SSTInfo*> index = sstIndex.getSSTsIndex();
+    ASSERT_EQ(index.size(), 2);
+
+    // Check first SST
+    EXPECT_EQ(index[0]->filename, "sst_001.sst");
+    EXPECT_EQ(std::get<int>(index[0]->smallest_key.getKey()), 1);
+    EXPECT_EQ(std::get<string>(index[0]->largest_key.getValue()), "hundred");
+
+    // Check second SST
+    EXPECT_EQ(index[1]->filename, "sst_002.sst");
+    EXPECT_EQ(std::get<int>(index[1]->smallest_key.getKey()), 101);
+    EXPECT_EQ(std::get<string>(index[1]->largest_key.getValue()), "two hundred");
 }
 
-TEST(SSTIndexTest, FlushIndexToDisk) {
-    SSTIndex* index = new SSTIndex();
-    index->set_path(fs::path("test_db"));
+TEST(SSTIndexTest, AddSSTUpdatesSize) {
+    // Create an SSTIndex instance
+    SSTIndex sstIndex;
 
-    index->addSST("sst_1.sst", 10, 100);
-    index->addSST("sst_2.sst", 200, 300);
+    // Verify the index starts empty
+    EXPECT_EQ(sstIndex.getSSTsIndex().size(), 0);
+
+    // Add an SST file
+    sstIndex.addSST("sst_001.sst", KeyValue(1, "one"), KeyValue(100, "hundred"));
+
+    // Verify the index size increases
+    EXPECT_EQ(sstIndex.getSSTsIndex().size(), 1);
+
+    // Add another SST file
+    sstIndex.addSST("sst_002.sst", KeyValue(101, "hundred and one"), KeyValue(200, "two hundred"));
+
+    // Verify the index size increases again
+    EXPECT_EQ(sstIndex.getSSTsIndex().size(), 2);
+}
+
+TEST(SSTIndexTest, AddSSTWithComplexKeyValues) {
+    // Create an SSTIndex instance
+    SSTIndex sstIndex;
+
+    // Add SST with different types for smallest and largest keys
+    sstIndex.addSST("sst_003.sst", KeyValue(1.23, "one point two three"), KeyValue('z', "zebra"));
+
+    // Verify the SST was added with correct key-value pairs
+    deque<SSTInfo*> index = sstIndex.getSSTsIndex();
+    ASSERT_EQ(index.size(), 1);
+
+    EXPECT_EQ(index.front()->filename, "sst_003.sst");
+    EXPECT_EQ(std::get<double>(index.front()->smallest_key.getKey()), 1.23);
+    EXPECT_EQ(std::get<string>(index.front()->largest_key.getValue()), "zebra");
+}
+
+/*
+ *  // Retrieve all SSTs into index (e.g., when reopening the database)
+ *  void getAllSSTs();  // updated with kv 2024-09-10
+ *  // flush index info into "Index.sst"
+ *  void flushToDisk(); // updated with kv 2024-09-10
+ */
+TEST(SSTIndexTest, BasicFlushAndRetrieve) {
+    SSTIndex sstIndex;
+    sstIndex.set_path(fs::path("test_db"));
+
+    // Add a single SST file
+    sstIndex.addSST("sst_001.sst", KeyValue(1, "one"), KeyValue(100, "hundred"));
 
     // Flush to disk
-    index->flushToDisk();
+    sstIndex.flushToDisk();
 
-    // Verify the file exists and has correct content
-    std::string filename = "Index.sst";
-    std::ifstream infile(fs::path("test_db") / filename);
-    ASSERT_TRUE(infile.is_open());
+    // Clear the index and retrieve SSTs from disk
+    sstIndex.getAllSSTs();
 
-    std::string line;
+    // Verify that the index has been restored
+    deque<SSTInfo*> index = sstIndex.getSSTsIndex();
+    ASSERT_EQ(index.size(), 1);
+    EXPECT_EQ(index.front()->filename, "sst_001.sst");
+    EXPECT_EQ(std::get<int>(index.front()->smallest_key.getKey()), 1);
+    EXPECT_EQ(std::get<string>(index.front()->largest_key.getValue()), "hundred");
 
-    // Read the first line and normalize the line endings
-    std::getline(infile, line);
-    line = normalize_line_endings(line);
-    EXPECT_EQ(line, "sst_1.sst 10 100");
-
-    // Read the second line and normalize the line endings
-    std::getline(infile, line);
-    line = normalize_line_endings(line);
-    EXPECT_EQ(line, "sst_2.sst 200 300");
-
-    infile.close();
-    delete index;
+    // Clean up
     fs::remove_all("test_db");
 }
 
+TEST(SSTIndexTest, MultipleFilesFlushAndRetrieve) {
+    SSTIndex sstIndex;
+    sstIndex.set_path(fs::path("test_db"));
 
-TEST(SSTIndexTest, RetrieveAllSSTsFromFile) {
-    SSTIndex* index = new SSTIndex();
-    index->set_path("test_db");
+    // Add multiple SST files
+    sstIndex.addSST("sst_001.sst", KeyValue(1, "one"), KeyValue(100, "hundred"));
+    sstIndex.addSST("sst_002.sst", KeyValue(101, "hundred and one"), KeyValue(200, "two hundred"));
+    sstIndex.addSST("sst_003.sst", KeyValue(201, "two hundred and one"), KeyValue(300, "three hundred"));
 
-    // Create an index file
-    std::ofstream outfile(fs::path("test_db") / "Index.sst");
-    outfile << "sst_1.sst 10 100\n";
-    outfile << "sst_2.sst 200 300\n";
-    outfile.close();
+    // Flush to disk
+    sstIndex.flushToDisk();
 
-    // Retrieve all SSTs
-    index->getAllSSTs();
+    // Clear the index and retrieve SSTs from disk
+    sstIndex.getAllSSTs();
 
-    std::deque<SSTInfo*> sst_index = index->getSSTsIndex();
-    ASSERT_EQ(sst_index.size(), 2);
-    EXPECT_EQ(sst_index[0]->filename, "sst_1.sst");
-    EXPECT_EQ(sst_index[1]->filename, "sst_2.sst");
+    // Verify that the index has been restored
+    deque<SSTInfo*> index = sstIndex.getSSTsIndex();
+    ASSERT_EQ(index.size(), 3);
+    EXPECT_EQ(index[0]->filename, "sst_001.sst");
+    EXPECT_EQ(index[1]->filename, "sst_002.sst");
+    EXPECT_EQ(index[2]->filename, "sst_003.sst");
 
-    delete index;
+    // Clean up
     fs::remove_all("test_db");
 }
 
-TEST(SSTIndexTest, RetrieveAllSSTsFromEmptyFile) {
-    SSTIndex* index = new SSTIndex();
-    index->set_path("test_db");
-
-    // Create an empty index file
-    std::ofstream outfile(fs::path("test_db") / "Index.sst");
-    outfile.close();
-
-    // Retrieve all SSTs
-    index->getAllSSTs();
-
-    std::deque<SSTInfo*> sst_index = index->getSSTsIndex();
-    EXPECT_EQ(sst_index.size(), 0);
-
-    delete index;
-    fs::remove_all("test_db");
-}
-
-TEST(SSTIndexTest, RetrieveAllSSTsWhenFileDoesNotExist) {
-    SSTIndex* index = new SSTIndex();
-    index->set_path("test_db");
-
-    // Ensure the index file does not exist
-    fs::remove(fs::path("test_db") / "Index.sst");
-
-    // Retrieve all SSTs
-    index->getAllSSTs();
-
-    std::deque<SSTInfo*> sst_index = index->getSSTsIndex();
-    EXPECT_EQ(sst_index.size(), 0);
-
-    delete index;
-    fs::remove_all("test_db");
-}
-
-TEST(SSTIndexTest, AddAndRetrieveMultipleSSTs) {
-    SSTIndex* index = new SSTIndex();
-    index->set_path("test_db");
-
-    index->addSST("sst_1.sst", 10, 100);
-    index->addSST("sst_2.sst", 200, 300);
-
-    std::deque<SSTInfo*> sst_index = index->getSSTsIndex();
-    ASSERT_EQ(sst_index.size(), 2);
-    EXPECT_EQ(sst_index[0]->filename, "sst_1.sst");
-    EXPECT_EQ(sst_index[0]->smallest_key, 10);
-    EXPECT_EQ(sst_index[0]->largest_key, 100);
-    EXPECT_EQ(sst_index[1]->filename, "sst_2.sst");
-    EXPECT_EQ(sst_index[1]->smallest_key, 200);
-    EXPECT_EQ(sst_index[1]->largest_key, 300);
-
-    delete index;
-    fs::remove_all("test_db");
-}
-
-TEST(SSTIndexTest, FlushIndexWithNoSSTs) {
-    SSTIndex* index = new SSTIndex();
-    index->set_path("test_db");
-
-    // Flush to disk with no SSTs
-    index->flushToDisk();
-
-    // Verify the file exists and is empty
-    std::ifstream infile(fs::path("test_db") / "Index.sst");
-    ASSERT_TRUE(infile.is_open());
-    infile.seekg(0, std::ios::end);
-    EXPECT_EQ(infile.tellg(), 0);
-
-    infile.close();
-    delete index;
-    fs::remove_all("test_db");
-}
-
-
-/*
- * The update feature has not yet been implemented -- 2024-08-29
- * Issue link to this: https://github.com/kkli08/KV-Store/issues/42
- *
- */
-// TEST(SSTIndexTest, UpdateExistingSSTInIndex) {
-//     SSTIndex* index = new SSTIndex();
-//     index->set_path("test_db");
-//
-//     index->addSST("sst_1.sst", 10, 100);
-//     index->addSST("sst_1.sst", 50, 150); // Update with new keys
-//
-//     std::deque<SSTInfo*> sst_index = index->getSSTsIndex();
-//     ASSERT_EQ(sst_index.size(), 1);
-//     EXPECT_EQ(sst_index[0]->filename, "sst_1.sst");
-//     EXPECT_EQ(sst_index[0]->smallest_key, 50);
-//     EXPECT_EQ(sst_index[0]->largest_key, 150);
-//
-//     delete index;
-//     fs::remove_all("test_db");
-// }
-
-
-/*
- * Unit Tests for Binary Search in SST file
- *
- * Test Case 1: Verifies that SearchInSST correctly finds an existing key.
- * Test Case 2: Ensures that SearchInSST returns -1 when the key does not exist.
- * Test Case 3: Checks that SearchInSST returns -1 when searching in an empty SST file.
- * Test Case 4: Tests the behavior of SearchInSST when the SST file contains a malformed line.
- *
- */
-
-TEST(SSTIndexTest, SearchForExistingKey) {
-    SSTIndex* index = new SSTIndex();
-    index->set_path("test_db");
-
-    // Create a sample SST file in binary format
-    std::ofstream outfile(fs::path("test_db") / "test.sst", std::ios::binary);
-    long long key = 10, value = 100;
-    outfile.write(reinterpret_cast<const char*>(&key), sizeof(long long));
-    outfile.write(",", 1);
-    outfile.write(reinterpret_cast<const char*>(&value), sizeof(long long));
-    outfile.write("\n", 1);
-
-    key = 20; value = 200;
-    outfile.write(reinterpret_cast<const char*>(&key), sizeof(long long));
-    outfile.write(",", 1);
-    outfile.write(reinterpret_cast<const char*>(&value), sizeof(long long));
-    outfile.write("\n", 1);
-
-    key = 30; value = 300;
-    outfile.write(reinterpret_cast<const char*>(&key), sizeof(long long));
-    outfile.write(",", 1);
-    outfile.write(reinterpret_cast<const char*>(&value), sizeof(long long));
-    outfile.write("\n", 1);
-
-    outfile.close();
-
-    // Search for a key
-    long long search_value = index->SearchInSST("test.sst", 20);
-    EXPECT_EQ(search_value, 200);
-
-    delete index;
-    fs::remove_all("test_db");
-}
-
-TEST(SSTIndexTest, SearchForNonExistingKey) {
-    SSTIndex* index = new SSTIndex();
-    index->set_path("test_db");
-
-    // Create a sample SST file in binary format
-    std::ofstream outfile(fs::path("test_db") / "test.sst", std::ios::binary);
-    long long key = 10, value = 100;
-    outfile.write(reinterpret_cast<const char*>(&key), sizeof(long long));
-    outfile.write(",", 1);
-    outfile.write(reinterpret_cast<const char*>(&value), sizeof(long long));
-    outfile.write("\n", 1);
-
-    key = 20; value = 200;
-    outfile.write(reinterpret_cast<const char*>(&key), sizeof(long long));
-    outfile.write(",", 1);
-    outfile.write(reinterpret_cast<const char*>(&value), sizeof(long long));
-    outfile.write("\n", 1);
-
-    key = 30; value = 300;
-    outfile.write(reinterpret_cast<const char*>(&key), sizeof(long long));
-    outfile.write(",", 1);
-    outfile.write(reinterpret_cast<const char*>(&value), sizeof(long long));
-    outfile.write("\n", 1);
-
-    outfile.close();
-
-    // Search for a key that doesn't exist
-    long long search_value = index->SearchInSST("test.sst", 40);
-    EXPECT_EQ(search_value, -1);
-
-    delete index;
-    fs::remove_all("test_db");
-}
-
-
-TEST(SSTIndexTest, SearchInEmptySSTFile) {
-    SSTIndex* index = new SSTIndex();
-    index->set_path("test_db");
-
-    // Create an empty SST file
-    std::ofstream outfile(fs::path("test_db") / "empty.sst");
-    outfile.close();
-
-    // Search for a key in an empty file
-    long long value = index->SearchInSST("empty.sst", 10);
-    EXPECT_EQ(value, -1);
-
-    delete index;
-    fs::remove_all("test_db");
-}
-
-// Issue: https://github.com/kkli08/KV-Store/issues/43
-// TEST(SSTIndexTest, SearchInSSTWithMalformedLine) {
-//     SSTIndex* index = new SSTIndex();
-//     index->set_path("test_db");
-//
-//     // Create a sample SST file with a malformed line in binary mode
-//     std::ofstream outfile(fs::path("test_db") / "malformed.sst", std::ios::binary);
-//     long long key = 10, value = 100;
-//     outfile.write(reinterpret_cast<const char*>(&key), sizeof(long long));
-//     outfile.write(",", 1);
-//     outfile.write(reinterpret_cast<const char*>(&value), sizeof(long long));
-//     outfile.write("\n", 1);
-//
-//     // Write a malformed line (in binary, this would be some invalid data)
-//     std::string malformed = "malformed_line";
-//     outfile.write(malformed.c_str(), malformed.size());
-//     outfile.write("\n", 1);
-//
-//     // Write a valid key-value pair after the malformed line
-//     key = 30; value = 300;
-//     outfile.write(reinterpret_cast<const char*>(&key), sizeof(long long));
-//     outfile.write(",", 1);
-//     outfile.write(reinterpret_cast<const char*>(&value), sizeof(long long));
-//     outfile.write("\n", 1);
-//
-//     outfile.close();
-//
-//     // Search for a key that exists after the malformed line
-//     long long search_value = index->SearchInSST("malformed.sst", 30);
-//     EXPECT_EQ(search_value, 300);
-//
-//     delete index;
-//     fs::remove_all("test_db");
-// }
-
-
-/*
- * Unit test for SSTIndex::Search(long long _key)
- *
- */
-// Test when SSTIndex is empty
-TEST(SSTIndexTest, SearchInEmptyIndex) {
-    SSTIndex* sstIndex = new SSTIndex();
-    long long result = sstIndex->Search(100);
-    EXPECT_EQ(result, -1);  // No SST files, so should return -1
-    delete sstIndex;
-}
-
-// Test when key is in the youngest SST file
-TEST(SSTIndexTest, SearchInYoungestSST) {
-    SSTIndex* sstIndex = new SSTIndex();
-    sstIndex->set_path(fs::current_path());
-
-    fs::path sst1 = "sst1.sst";
-    fs::path sst2 = "sst2.sst";
-
-    createSSTFile(sst1, {{100, 100}, {150, 150}});
-    createSSTFile(sst2, {{201, 201}, {250, 250}, {300, 300}});
-
-    sstIndex->addSST("sst1.sst", 100, 200);
-    sstIndex->addSST("sst2.sst", 201, 300);
-
-    long long result = sstIndex->Search(250);
-    EXPECT_EQ(result, 250);  // Key 250 should be found in sst2.sst
-
-    deleteSSTFile(sst1);
-    deleteSSTFile(sst2);
-    delete sstIndex;
-}
-
-// Test when key is in the oldest SST file
-TEST(SSTIndexTest, SearchInOldestSST) {
-    SSTIndex* sstIndex = new SSTIndex();
-    sstIndex->set_path(fs::current_path());
-
-    fs::path sst1 = "sst1.sst";
-    fs::path sst2 = "sst2.sst";
-
-    createSSTFile(sst1, {{100, 100}, {150, 150}, {199, 200}});
-    createSSTFile(sst2, {{201, 201}, {250, 250}, {300, 300}});
-
-    sstIndex->addSST("sst1.sst", 100, 200);
-    sstIndex->addSST("sst2.sst", 201, 300);
-
-    long long result = sstIndex->Search(150);
-    EXPECT_EQ(result, 150);  // Key 150 should be found in sst1.sst
-
-    deleteSSTFile(sst1);
-    deleteSSTFile(sst2);
-    delete sstIndex;
-}
-
-// Test when key is not in any SST file
-TEST(SSTIndexTest, KeyNotInAnySST) {
-    SSTIndex* sstIndex = new SSTIndex();
-    sstIndex->set_path(fs::current_path());
-
-    fs::path sst1 = "sst1.sst";
-    fs::path sst2 = "sst2.sst";
-
-    createSSTFile(sst1, {{100, 100}, {150, 150}});
-    createSSTFile(sst2, {{201, 201}, {250, 250}, {300, 300}});
-
-    sstIndex->addSST("sst1.sst", 100, 200);
-    sstIndex->addSST("sst2.sst", 201, 300);
-
-    long long result = sstIndex->Search(400);
-    EXPECT_EQ(result, -1);  // Key 400 is not in any SST, should return -1
-
-    deleteSSTFile(sst1);
-    deleteSSTFile(sst2);
-    delete sstIndex;
-}
-
-// Test with multiple SST files, key in the middle file
-TEST(SSTIndexTest, KeyInMiddleSST) {
-    SSTIndex* sstIndex = new SSTIndex();
-    sstIndex->set_path(fs::current_path());
-
-    fs::path sst1 = "sst1.sst";
-    fs::path sst2 = "sst2.sst";
-    fs::path sst3 = "sst3.sst";
-
-    createSSTFile(sst1, {{100, 100}, {150, 150}});
-    createSSTFile(sst2, {{201, 201}, {250, 250}, {300, 300}});
-    createSSTFile(sst3, {{301, 301}, {350, 350}, {400, 400}});
-
-    sstIndex->addSST("sst1.sst", 100, 200);
-    sstIndex->addSST("sst2.sst", 201, 300);
-    sstIndex->addSST("sst3.sst", 301, 400);
-
-    long long result = sstIndex->Search(250);
-    EXPECT_EQ(result, 250);  // Key 250 should be found in sst2.sst
-
-    deleteSSTFile(sst1);
-    deleteSSTFile(sst2);
-    deleteSSTFile(sst3);
-    delete sstIndex;
-}
-
-// Test when key is exactly the smallest key in the youngest SST
-TEST(SSTIndexTest, KeyIsSmallestInYoungestSST) {
-    SSTIndex* sstIndex = new SSTIndex();
-    sstIndex->set_path(fs::current_path());
-
-    fs::path sst1 = "sst1.sst";
-    fs::path sst2 = "sst2.sst";
-
-    createSSTFile(sst1, {{100, 100}, {150, 150}});
-    createSSTFile(sst2, {{201, 202}, {250, 250}, {300, 300}});
-
-    sstIndex->addSST("sst1.sst", 100, 200);
-    sstIndex->addSST("sst2.sst", 201, 300);
-
-    long long result = sstIndex->Search(201);
-    EXPECT_EQ(result, 202);  // Key 201 should be found in sst2.sst
-
-    deleteSSTFile(sst1);
-    deleteSSTFile(sst2);
-    delete sstIndex;
-}
-
-// Test when key is exactly the largest key in the oldest SST
-TEST(SSTIndexTest, KeyIsLargestInOldestSST) {
-    SSTIndex* sstIndex = new SSTIndex();
-    sstIndex->set_path(fs::current_path());
-
-    fs::path sst1 = "sst1.sst";
-    fs::path sst2 = "sst2.sst";
-
-    createSSTFile(sst1, {{100, 100}, {150, 150}, {200, 200}});
-    createSSTFile(sst2, {{200, 211}, {250, 250}, {300, 300}});
-
-    sstIndex->addSST("sst1.sst", 100, 200);
-    sstIndex->addSST("sst2.sst", 200, 300);
-
-    long long result = sstIndex->Search(200);
-    EXPECT_EQ(result, 211);  // Key 200 should be found in sst1.sst
-
-    deleteSSTFile(sst1);
-    deleteSSTFile(sst2);
-    delete sstIndex;
-}
-
-// Test with a key that is in a file but near the boundary of another
-TEST(SSTIndexTest, KeyNearBoundary) {
-    SSTIndex* sstIndex = new SSTIndex();
-    sstIndex->set_path(fs::current_path());
-
-    fs::path sst1 = "sst1.sst";
-    fs::path sst2 = "sst2.sst";
-
-    createSSTFile(sst1, {{100, 100}, {150, 150}});
-    createSSTFile(sst2, {{201, 201}, {250, 250}, {300, 300}});
-
-    sstIndex->addSST("sst1.sst", 100, 200);
-    sstIndex->addSST("sst2.sst", 201, 300);
-
-    long long result = sstIndex->Search(300);
-    EXPECT_EQ(result, 300);  // Key 300 should be found in sst2.sst
-
-    deleteSSTFile(sst1);
-    deleteSSTFile(sst2);
-    delete sstIndex;
-}
-
-// Test with empty SSTIndex
-TEST(SSTIndexTest, EmptySSTIndex) {
-    SSTIndex* sstIndex = new SSTIndex();
-    long long result = sstIndex->Search(12345);
-    EXPECT_EQ(result, -1);  // Should return -1 since index is empty
-    delete sstIndex;
-}
-
-// large test case with 1e3 lines in the file
-TEST(SSTIndexTest, LargeAmountOfDataWithMultipleSearches) {
-    SSTIndex* index = new SSTIndex();
-    index->set_path("test_db");
-
-    // Create a large SST file with 1,000 key-value pairs
-    std::ofstream outfile(fs::path("test_db") / "large.sst", std::ios::binary);
-    if (!outfile.is_open()) {
-        throw std::runtime_error("Failed to open SST file for writing");
-    }
-
-    for (long long i = 1; i <= 1000; ++i) {
-        outfile.write(reinterpret_cast<const char*>(&i), sizeof(long long));
-        outfile.write(",", 1);
-        long long value = i * 10;
-        outfile.write(reinterpret_cast<const char*>(&value), sizeof(long long));
-        outfile.write("\n", 1);
-    }
-    outfile.close();
-
-    // Perform 1000 searches
+TEST(SSTIndexTest, LargeNumberOfFilesFlushAndRetrieve) {
+    SSTIndex sstIndex;
+    sstIndex.set_path(fs::path("test_db"));
+
+    // Add 1000 SST files
     for (int i = 0; i < 1000; ++i) {
-        // Randomly generate a key within the range
-        // long long key_to_search = rand() % 1000 + 1;
-        long long key_to_search = i + 1;
-        long long expected_value = key_to_search * 10;
-        long long value = index->SearchInSST("large.sst", key_to_search);
-        EXPECT_EQ(value, expected_value);
+        sstIndex.addSST("sst_" + std::to_string(i) + ".sst", KeyValue(i, "smallest"), KeyValue(i + 100, "largest"));
     }
 
-    // Edge case 1: Search for the smallest key
-    EXPECT_EQ(index->SearchInSST("large.sst", 1), 10);
+    // Flush to disk
+    sstIndex.flushToDisk();
 
-    // Edge case 2: Search for the largest key
-    EXPECT_EQ(index->SearchInSST("large.sst", 1000), 10000);
+    // Clear the index and retrieve SSTs from disk
+    sstIndex.getAllSSTs();
 
-    // Edge case 3: Search for a non-existent key (lower than the smallest)
-    EXPECT_EQ(index->SearchInSST("large.sst", 0), -1);
+    // Verify that the index has been restored
+    deque<SSTInfo*> index = sstIndex.getSSTsIndex();
+    ASSERT_EQ(index.size(), 1000);
+    EXPECT_EQ(index[0]->filename, "sst_0.sst");
 
-    // Edge case 4: Search for a non-existent key (higher than the largest)
-    EXPECT_EQ(index->SearchInSST("large.sst", 1001), -1);
-
-    // Edge case 5: Search for a key in the middle
-    EXPECT_EQ(index->SearchInSST("large.sst", 500), 5000);
-
-    delete index;
+    // Clean up
     fs::remove_all("test_db");
 }
 
+TEST(SSTIndexTest, RetrieveWithoutFlush) {
+    SSTIndex sstIndex;
+    sstIndex.set_path(fs::path("test_db"));
+
+    // Add SST files without flushing to disk
+    sstIndex.addSST("sst_001.sst", KeyValue(1, "one"), KeyValue(100, "hundred"));
+
+    // Clear the index and attempt to retrieve SSTs from disk (nothing should be loaded)
+    sstIndex.getAllSSTs();
+
+    // Verify that the index is still empty
+    deque<SSTInfo*> index = sstIndex.getSSTsIndex();
+    ASSERT_EQ(index.size(), 1);
+
+    // Clean up
+    fs::remove_all("test_db");
+}
+
+TEST(SSTIndexTest, FlushWithOneInstanceRetrieveWithAnother) {
+    fs::path test_path = "test_db";
+
+    // First instance of SSTIndex for flushing data to disk
+    SSTIndex sstIndexFlush;
+    sstIndexFlush.set_path(test_path);
+
+    // Add 500 SST files to the first SSTIndex instance
+    for (int i = 0; i < 500; ++i) {
+        sstIndexFlush.addSST("sst_" + std::to_string(i) + ".sst", KeyValue(i, "smallest"), KeyValue(i + 10, "largest"));
+    }
+
+    // Flush to disk using the first instance
+    sstIndexFlush.flushToDisk();
+
+    // Second instance of SSTIndex for retrieving data from disk
+    SSTIndex sstIndexRetrieve;
+    sstIndexRetrieve.set_path(test_path);
+
+    // Retrieve SST files using the second instance
+    sstIndexRetrieve.getAllSSTs();
+    sstIndexFlush.getAllSSTs();
+
+    // Get the index from both instances
+    deque<SSTInfo*> flushedIndex = sstIndexFlush.getSSTsIndex();
+    deque<SSTInfo*> retrievedIndex = sstIndexRetrieve.getSSTsIndex();
+
+    // Verify the size of the indices
+    ASSERT_EQ(flushedIndex.size(), retrievedIndex.size());
+
+    // Verify that all SST files and key-value pairs match between the two instances
+    for (size_t i = 0; i < flushedIndex.size(); ++i) {
+        EXPECT_EQ(flushedIndex[i]->filename, retrievedIndex[i]->filename);
+        EXPECT_EQ(std::get<int>(flushedIndex[i]->smallest_key.getKey()), std::get<int>(retrievedIndex[i]->smallest_key.getKey()));
+        EXPECT_EQ(std::get<int>(flushedIndex[i]->largest_key.getKey()), std::get<int>(retrievedIndex[i]->largest_key.getKey()));
+        EXPECT_EQ(std::get<string>(flushedIndex[i]->smallest_key.getValue()), std::get<string>(retrievedIndex[i]->smallest_key.getValue()));
+        EXPECT_EQ(std::get<string>(flushedIndex[i]->largest_key.getValue()), std::get<string>(retrievedIndex[i]->largest_key.getValue()));
+    }
+
+    // Clean up
+    fs::remove_all(test_path);
+}
 
 /*
- * generate 100 sst files with each one contains 1000 kv pairs
+ * KeyValue SearchInSST(const string& filename, KeyValue _key);
+ * KeyValue Search(KeyValue);
  */
+
+TEST(SSTIndexTest, SearchInSingleSSTFile) {
+    // Create a Memtable and insert key-value pairs
+    Memtable* memtable = new Memtable(10); // small threshold
+    memtable->set_path(fs::path("test_db"));
+
+    // Insert key-value pairs into the memtable
+    memtable->put(KeyValue(1, "one"));
+    memtable->put(KeyValue(2, "two"));
+    memtable->put(KeyValue(3, "three"));
+
+    // Flush the Memtable to an SST file
+    FlushSSTInfo info = memtable->file_manager.flushToDisk(memtable->getTree()->inOrderFlushToSst());
+
+    // Create an SSTIndex instance
+    SSTIndex sstIndex;
+    sstIndex.set_path(fs::path("test_db"));
+
+    // Search for an existing key in the SST file
+    KeyValue result = sstIndex.SearchInSST(info.fileName, KeyValue(2, ""));
+    EXPECT_FALSE(result.isEmpty());
+    EXPECT_EQ(std::get<int>(result.getKey()), 2);
+    EXPECT_EQ(std::get<string>(result.getValue()), "two");
+
+    // Clean up
+    delete memtable;
+    fs::remove_all("test_db");
+}
+
+TEST(SSTIndexTest, SearchNonExistentKeyInSingleSSTFile) {
+    // Create a Memtable and insert key-value pairs
+    Memtable* memtable = new Memtable(10);
+    memtable->set_path(fs::path("test_db"));
+
+    // Insert key-value pairs into the memtable
+    memtable->put(KeyValue(1, "one"));
+    memtable->put(KeyValue(2, "two"));
+    memtable->put(KeyValue(3, "three"));
+
+    // Flush the Memtable to an SST file
+    FlushSSTInfo info = memtable->file_manager.flushToDisk(memtable->getTree()->inOrderFlushToSst());
+
+    // Create an SSTIndex instance
+    SSTIndex sstIndex;
+    sstIndex.set_path(fs::path("test_db"));
+
+    // Search for a non-existent key in the SST file
+    KeyValue result = sstIndex.SearchInSST(info.fileName, KeyValue(4, ""));
+    EXPECT_TRUE(result.isEmpty());
+
+    // Clean up
+    delete memtable;
+    fs::remove_all("test_db");
+}
+
+TEST(SSTIndexTest, SearchInMultipleSSTFiles) {
+    // Create a Memtable and insert key-value pairs
+    Memtable* memtable = new Memtable(10);
+    memtable->set_path(fs::path("test_db"));
+
+    // Insert key-value pairs into the memtable and flush them
+    memtable->put(KeyValue(1, "one"));
+    memtable->put(KeyValue(2, "two"));
+    FlushSSTInfo info1 = memtable->file_manager.flushToDisk(memtable->getTree()->inOrderFlushToSst());
+
+    memtable->put(KeyValue(3, "three"));
+    memtable->put(KeyValue(4, "four"));
+    FlushSSTInfo info2 = memtable->file_manager.flushToDisk(memtable->getTree()->inOrderFlushToSst());
+
+    // Create an SSTIndex instance
+    SSTIndex sstIndex;
+    sstIndex.set_path(fs::path("test_db"));
+
+    // Search for a key in the second SST file
+    KeyValue result = sstIndex.SearchInSST(info2.fileName, KeyValue(3, ""));
+    EXPECT_FALSE(result.isEmpty());
+    EXPECT_EQ(std::get<int>(result.getKey()), 3);
+    EXPECT_EQ(std::get<string>(result.getValue()), "three");
+
+    // Clean up
+    delete memtable;
+    fs::remove_all("test_db");
+}
+
+TEST(SSTIndexTest, SearchInLargeNumberOfSSTFiles) {
+    // Create a Memtable and insert large number of key-value pairs
+    Memtable* memtable = new Memtable(100);
+    memtable->set_path(fs::path("test_db"));
+
+    // Insert 1000 key-value pairs and flush them to SST files
+    for (int i = 0; i < 1000; ++i) {
+        memtable->put(KeyValue(i, "value_" + std::to_string(i)));
+    }
+
+    // Create an SSTIndex instance
+    SSTIndex sstIndex;
+    sstIndex.set_path(fs::path("test_db"));
+    // sstIndex.getAllSSTs();
+
+    // Search for a key in the middle of the range
+    KeyValue result = sstIndex.SearchInSST("sst_5.sst", KeyValue(500, ""));
+    EXPECT_FALSE(result.isEmpty());
+    EXPECT_EQ(std::get<int>(result.getKey()), 500);
+    EXPECT_EQ(std::get<string>(result.getValue()), "value_500");
+
+    // Clean up
+    delete memtable;
+    fs::remove_all("test_db");
+}
+
+// Search
+TEST(SSTIndexTest, SearchForExistingKey) {
+    // Create a Memtable with a threshold of 3 (flushes after 3 key-value pairs)
+    Memtable* memtable = new Memtable(3);
+    memtable->set_path(fs::path("test_db"));
+
+    // Insert key-value pairs (memtable will automatically flush after reaching threshold)
+    memtable->put(KeyValue(1, "one"));
+    memtable->put(KeyValue(2, "two"));
+    memtable->put(KeyValue(3, "three"));  // Flushing occurs here
+
+    // Manually add the SST information to SSTIndex after the flush
+    FlushSSTInfo info = memtable->file_manager.flushToDisk(memtable->getTree()->inOrderFlushToSst());
+
+    // Create an SSTIndex instance
+    SSTIndex sstIndex;
+    sstIndex.set_path(fs::path("test_db"));
+
+    // Manually add the flushed SST file info into SSTIndex
+    sstIndex.addSST(info.fileName, info.smallest_key, info.largest_key);
+
+    // Search for an existing key in the SST file
+    KeyValue result = sstIndex.Search(KeyValue(3, ""));
+
+    // Verify that the key-value pair was found
+    EXPECT_FALSE(result.isEmpty());
+    EXPECT_EQ(std::get<int>(result.getKey()), 3);
+    EXPECT_EQ(std::get<string>(result.getValue()), "three");
+
+    // Clean up
+    delete memtable;
+    fs::remove_all("test_db");
+}
+
+TEST(SSTIndexTest, SearchForNonExistentKey) {
+    // Create a Memtable with a threshold of 3
+    Memtable* memtable = new Memtable(3);
+    memtable->set_path(fs::path("test_db"));
+
+    // Insert key-value pairs (flush occurs automatically)
+    memtable->put(KeyValue(1, "one"));
+    memtable->put(KeyValue(2, "two"));
+    memtable->put(KeyValue(3, "three"));
+
+    // Manually add the SST information to SSTIndex after the flush
+    FlushSSTInfo info = memtable->file_manager.flushToDisk(memtable->getTree()->inOrderFlushToSst());
+
+    // Create an SSTIndex instance
+    SSTIndex sstIndex;
+    sstIndex.set_path(fs::path("test_db"));
+
+    // Manually add the flushed SST file info into SSTIndex
+    sstIndex.addSST(info.fileName, info.smallest_key, info.largest_key);
+
+    // Search for a non-existent key in the SST file
+    KeyValue result = sstIndex.Search(KeyValue(10, ""));
+
+    // Verify that the key-value pair was not found (empty result)
+    EXPECT_TRUE(result.isEmpty());
+
+    // Clean up
+    delete memtable;
+    fs::remove_all("test_db");
+}
+
 TEST(SSTIndexTest, SearchAcrossMultipleSSTFiles) {
-    SSTIndex* index = new SSTIndex();
-    index->set_path("test_db");
+    // Create a Memtable with a threshold of 3
+    Memtable* memtable = new Memtable(3);
+    memtable->set_path(fs::path("test_db"));
 
-    const int num_files = 100;      // Number of SST files
-    const int pairs_per_file = 1000; // Key-value pairs per SST file
-    const long long start_key = 1;  // Start key for the first SST file
+    // Insert key-value pairs to trigger multiple flushes
+    memtable->put(KeyValue(1, "one"));
+    memtable->put(KeyValue(2, "two"));
+    memtable->put(KeyValue(3, "three"));  // First flush occurs here
+    FlushSSTInfo info1 = memtable->file_manager.flushToDisk(memtable->getTree()->inOrderFlushToSst());
 
-    // Create 100 SST files with 1,000 key-value pairs each
-    for (int file_num = 0; file_num < num_files; ++file_num) {
-        std::string filename = "sst_" + std::to_string(file_num) + ".sst";
-        std::ofstream outfile(fs::path("test_db") / filename, std::ios::binary);
-        if (!outfile.is_open()) {
-            throw std::runtime_error("Failed to open SST file for writing");
+    memtable->put(KeyValue(4, "four"));
+    memtable->put(KeyValue(5, "five"));
+    memtable->put(KeyValue(6, "six"));    // Second flush occurs here
+    FlushSSTInfo info2 = memtable->file_manager.flushToDisk(memtable->getTree()->inOrderFlushToSst());
+
+    memtable->put(KeyValue(7, "seven"));
+
+    // Create an SSTIndex instance
+    SSTIndex sstIndex;
+    sstIndex.set_path(fs::path("test_db"));
+
+    // Manually add the flushed SST files into SSTIndex
+    sstIndex.addSST(info1.fileName, info1.smallest_key, info1.largest_key);
+    sstIndex.addSST(info2.fileName, info2.smallest_key, info2.largest_key);
+
+    // Search for keys across multiple SST files
+    KeyValue result1 = sstIndex.Search(KeyValue(2, ""));
+    KeyValue result2 = sstIndex.Search(KeyValue(6, ""));
+
+    // Verify both keys were found
+    EXPECT_FALSE(result1.isEmpty());
+    EXPECT_EQ(std::get<int>(result1.getKey()), 2);
+    EXPECT_EQ(std::get<string>(result1.getValue()), "two");
+
+    EXPECT_FALSE(result2.isEmpty());
+    EXPECT_EQ(std::get<int>(result2.getKey()), 6);
+    EXPECT_EQ(std::get<string>(result2.getValue()), "six");
+
+    // Clean up
+    delete memtable;
+    fs::remove_all("test_db");
+}
+
+TEST(SSTIndexTest, SearchIn1e3OfSSTFiles) {
+    // Create a Memtable with a threshold of 100 (flushes after 100 key-value pairs)
+    Memtable* memtable = new Memtable(100);
+    memtable->set_path(fs::path("test_db"));
+
+    // Create SSTIndex instance
+    SSTIndex sstIndex;
+    sstIndex.set_path(fs::path("test_db"));
+
+    // Insert 1000 key-value pairs (this will trigger multiple flushes)
+    for (int i = 0; i < 1e3; ++i) {
+        KeyValue kv(i, "value_" + std::to_string(i));
+
+        // After every flush (each 1,000 key-value pairs), manually add the SST info to SSTIndex
+        if (i % 100 == 0 && i != 0) {
+            FlushSSTInfo info = memtable->put(kv);
+            sstIndex.addSST(info.fileName, info.smallest_key, info.largest_key);
+            continue;
         }
-
-        long long base_key = start_key + file_num * pairs_per_file;
-        for (long long i = 0; i < pairs_per_file; ++i) {
-            long long key = base_key + i;
-            long long value = key * 10;
-            outfile.write(reinterpret_cast<const char*>(&key), sizeof(long long));
-            outfile.write(",", 1);
-            outfile.write(reinterpret_cast<const char*>(&value), sizeof(long long));
-            outfile.write("\n", 1);
-        }
-        outfile.close();
-
-        // Add this SST file to the index
-        index->addSST(filename, base_key, base_key + pairs_per_file - 1);
+        memtable->put(kv);
     }
 
-    // Perform searches across all files
-    for (int file_num = 0; file_num < num_files; ++file_num) {
-        long long base_key = start_key + file_num * pairs_per_file;
-        for (long long i = 0; i < pairs_per_file; ++i) {
-            long long key_to_search = base_key + i;
-            long long expected_value = key_to_search * 10;
-            long long value = index->Search(key_to_search);
-            EXPECT_EQ(value, expected_value);
+    // Search for a key in the middle of the range
+    KeyValue result = sstIndex.Search(KeyValue(500, ""));
+
+    // Verify that the key-value pair was found
+    EXPECT_FALSE(result.isEmpty());
+    EXPECT_EQ(std::get<int>(result.getKey()), 500);
+    EXPECT_EQ(std::get<string>(result.getValue()), "value_500");
+
+    // Clean up
+    delete memtable;
+    fs::remove_all("test_db");
+}
+
+// Performance issue
+TEST(SSTIndexTest, Search1e5KeyValuePairs) {
+    const int numKVPairs = 1e3;    // Total number of key-value pairs (1e5)
+    const int memtableSize = 1e2;    // Memtable threshold (1e3)
+
+    // Create a Memtable with a threshold of 1,000 (flushes after 1,000 key-value pairs)
+    Memtable* memtable = new Memtable(memtableSize);
+    memtable->set_path(fs::path("test_db"));
+
+    // Create an SSTIndex instance to store the SST information
+    SSTIndex sstIndex;
+    sstIndex.set_path(fs::path("test_db"));
+
+    // Insert 100,000 key-value pairs into the Memtable (this will trigger multiple flushes)
+    for (int i = 0; i < numKVPairs; ++i) {
+        KeyValue kv(i, "value_" + std::to_string(i));
+
+        // After every flush (each 1,000 key-value pairs), manually add the SST info to SSTIndex
+        if (i % memtableSize == 0 && i != 0) {
+            FlushSSTInfo info = memtable->put(kv);
+            sstIndex.addSST(info.fileName, info.smallest_key, info.largest_key);
+            continue;
         }
+        memtable->put(kv);
     }
 
-    // Edge case 1: Search for the smallest key
-    EXPECT_EQ(index->Search(start_key), start_key * 10);
+    // After all insertions, there might still be data left in the Memtable, flush it
+    FlushSSTInfo finalInfo = memtable->file_manager.flushToDisk(memtable->getTree()->inOrderFlushToSst());
+    sstIndex.addSST(finalInfo.fileName, finalInfo.smallest_key, finalInfo.largest_key);
 
-    // Edge case 2: Search for the largest key
-    EXPECT_EQ(index->Search(start_key + num_files * pairs_per_file - 1),
-              (start_key + num_files * pairs_per_file - 1) * 10);
+    // Search for every inserted key-value pair and verify it exists
+    for (int i = 1; i < numKVPairs; ++i) {
+        // cout << "i = " << i << endl;
+        KeyValue result = sstIndex.Search(KeyValue(i, ""));
+        EXPECT_FALSE(result.isEmpty());
+        EXPECT_EQ(std::get<int>(result.getKey()), i);
+        EXPECT_EQ(std::get<string>(result.getValue()), "value_" + std::to_string(i));
+    }
 
-    // Edge case 3: Search for a non-existent key (lower than the smallest)
-    EXPECT_EQ(index->Search(start_key - 1), -1);
-
-    // Edge case 4: Search for a non-existent key (higher than the largest)
-    EXPECT_EQ(index->Search(start_key + num_files * pairs_per_file), -1);
-
-    // Edge case 5: Search for a key in the middle
-    long long middle_key = start_key + (num_files * pairs_per_file) / 2;
-    EXPECT_EQ(index->Search(middle_key), middle_key * 10);
-
-    delete index;
+    // Clean up
+    delete memtable;
     fs::remove_all("test_db");
 }
 
 
-
 /*
- * Unit Tests for SCAN
- * --> void SSTIndex::ScanInSST(long long, long long, const string&, unordered_map<long long, long long>&);
- * --> void SSTIndex::Scan(long long, long long, unordered_map<long long, long long>&);
+ * Scan in SST
  */
 
-// Scan Within a Single SST File
-// This test checks if the ScanInSST method correctly scans a range of keys within a single SST file.
-TEST(SSTIndexTest, ScanWithinSingleSSTFile) {
-    SSTIndex* sstIndex = new SSTIndex();
-    sstIndex->set_path(fs::current_path());
+TEST(SSTIndexTest, ScanRangeOfKeyValuePairs) {
+    // Create a Memtable with a small threshold to trigger flushes quickly
+    Memtable* memtable = new Memtable(3);
+    memtable->set_path(fs::path("test_db"));
 
-    fs::path sst1 = "sst1.sst";
-    createSSTFile(sst1, {{100, 1000}, {150, 1500}, {200, 2000}, {250, 2500}, {300, 3000}});
+    // Insert key-value pairs into the memtable
+    memtable->put(KeyValue(1, "one"));
+    memtable->put(KeyValue(2, "two"));
+    memtable->put(KeyValue(3, "three"));  // Flushing occurs here
 
-    unordered_map<long long, long long> result;
-    sstIndex->ScanInSST(150, 250, "sst1.sst", result);
+    // Flush the Memtable to an SST file
+    FlushSSTInfo info = memtable->file_manager.flushToDisk(memtable->getTree()->inOrderFlushToSst());
 
-    EXPECT_EQ(result.size(), 3);
-    EXPECT_EQ(result[150], 1500);
-    EXPECT_EQ(result[200], 2000);
-    EXPECT_EQ(result[250], 2500);
+    // Create SSTIndex instance
+    SSTIndex sstIndex;
+    sstIndex.set_path(fs::path("test_db"));
 
-    deleteSSTFile(sst1);
-    delete sstIndex;
+    // Manually add the flushed SST file to the SSTIndex
+    sstIndex.addSST(info.fileName, info.smallest_key, info.largest_key);
+
+    // Perform a scan for the range of key-value pairs
+    set<KeyValue> resultSet;
+    sstIndex.ScanInSST(KeyValue(1, ""), KeyValue(3, ""), info.fileName, resultSet);
+
+    // Verify the scanned result
+    ASSERT_EQ(resultSet.size(), 3);
+    EXPECT_EQ(std::get<int>(resultSet.begin()->getKey()), 1);
+    EXPECT_EQ(std::get<string>(resultSet.rbegin()->getValue()), "three");
+
+    // Clean up
+    delete memtable;
+    fs::remove_all("test_db");
 }
 
-// Scan Across Boundary in Single SST File
-// This test checks if the ScanInSST method correctly handles scans that start before the smallest key and end after the largest key.
-TEST(SSTIndexTest, ScanAcrossBoundarySingleSSTFile) {
-    SSTIndex* sstIndex = new SSTIndex();
-    sstIndex->set_path(fs::current_path());
+TEST(SSTIndexTest, ScanForNonExistentRange) {
+    // Create a Memtable with a small threshold to trigger flushes quickly
+    Memtable* memtable = new Memtable(3);
+    memtable->set_path(fs::path("test_db"));
 
-    fs::path sst1 = "sst1.sst";
-    createSSTFile(sst1, {{100, 1000}, {150, 1500}, {200, 2000}, {250, 2500}, {300, 3000}});
+    // Insert key-value pairs into the memtable
+    memtable->put(KeyValue(1, "one"));
+    memtable->put(KeyValue(2, "two"));
+    memtable->put(KeyValue(3, "three"));  // Flushing occurs here
 
-    unordered_map<long long, long long> result;
-    sstIndex->ScanInSST(50, 350, "sst1.sst", result);
+    // Flush the Memtable to an SST file
+    FlushSSTInfo info = memtable->file_manager.flushToDisk(memtable->getTree()->inOrderFlushToSst());
 
-    EXPECT_EQ(result.size(), 5);
-    EXPECT_EQ(result[100], 1000);
-    EXPECT_EQ(result[150], 1500);
-    EXPECT_EQ(result[200], 2000);
-    EXPECT_EQ(result[250], 2500);
-    EXPECT_EQ(result[300], 3000);
+    // Create SSTIndex instance
+    SSTIndex sstIndex;
+    sstIndex.set_path(fs::path("test_db"));
 
-    deleteSSTFile(sst1);
-    delete sstIndex;
+    // Manually add the flushed SST file to the SSTIndex
+    sstIndex.addSST(info.fileName, info.smallest_key, info.largest_key);
+
+    // Perform a scan for a range with no matching key-value pairs
+    set<KeyValue> resultSet;
+    sstIndex.ScanInSST(KeyValue(10, ""), KeyValue(20, ""), info.fileName, resultSet);
+
+    // Verify that no key-value pairs were found
+    EXPECT_EQ(resultSet.size(), 0);
+
+    // Clean up
+    delete memtable;
+    fs::remove_all("test_db");
 }
 
-TEST(SSTIndexTest, ScanNoMatchingKeys) {
-    SSTIndex* sstIndex = new SSTIndex();
-    sstIndex->set_path(fs::current_path());
+TEST(SSTIndexTest, ScanLargeNumberOfKeyValuePairs) {
+    // Create a Memtable with a large threshold
+    Memtable* memtable = new Memtable(1000);
+    memtable->set_path(fs::path("test_db"));
 
-    fs::path sst1 = "sst1.sst";
-    createSSTFile(sst1, {{100, 1000}, {150, 1500}, {200, 2000}, {250, 2500}, {300, 3000}});
+    // Insert 1000 key-value pairs into the memtable
+    for (int i = 0; i < 1000; ++i) {
+        memtable->put(KeyValue(i, "value_" + std::to_string(i)));
+    }
 
-    unordered_map<long long, long long> result;
-    sstIndex->ScanInSST(350, 400, "sst1.sst", result);
+    // Flush the Memtable to an SST file
+    FlushSSTInfo info = memtable->file_manager.flushToDisk(memtable->getTree()->inOrderFlushToSst());
 
-    EXPECT_EQ(result.size(), 0);
+    // Create SSTIndex instance
+    SSTIndex sstIndex;
+    sstIndex.set_path(fs::path("test_db"));
 
-    deleteSSTFile(sst1);
-    delete sstIndex;
+    // Manually add the flushed SST file to the SSTIndex
+    sstIndex.addSST(info.fileName, info.smallest_key, info.largest_key);
+
+    // Perform a scan for a large range of key-value pairs
+    set<KeyValue> resultSet;
+    sstIndex.ScanInSST(KeyValue(100, ""), KeyValue(900, ""), info.fileName, resultSet);
+
+    // // Debug: Print the keys in the resultSet
+    // for (const auto& kv : resultSet) {
+    //     std::cout << "Key: " << std::get<int>(kv.getKey()) << ", Value: " << std::get<string>(kv.getValue()) << "\n";
+    // }
+
+    // Verify that the correct number of key-value pairs were found
+    EXPECT_EQ(resultSet.size(), 801);
+
+    // Clean up
+    delete memtable;
+    fs::remove_all("test_db");
 }
 
-TEST(SSTIndexTest, ScanEdgeKeys) {
-    SSTIndex* sstIndex = new SSTIndex();
-    sstIndex->set_path(fs::current_path());
+/*
+ * Scan
+ */
+TEST(SSTIndexTest, BasicScanRangeAcrossSSTFiles) {
+    // Create a Memtable with a small threshold to trigger flushes quickly
+    Memtable* memtable = new Memtable(3);
+    memtable->set_path(fs::path("test_db"));
 
-    fs::path sst1 = "sst1.sst";
-    createSSTFile(sst1, {{100, 1000}, {150, 1500}, {200, 2000}, {250, 2500}, {300, 3000}});
+    // Insert key-value pairs into the memtable
+    memtable->put(KeyValue(1, "one"));
+    memtable->put(KeyValue(2, "two"));
+    memtable->put(KeyValue(3, "three"));  // First flush
+    FlushSSTInfo info1 = memtable->file_manager.flushToDisk(memtable->getTree()->inOrderFlushToSst());
 
-    unordered_map<long long, long long> result;
-    sstIndex->ScanInSST(100, 300, "sst1.sst", result);
+    memtable->put(KeyValue(4, "four"));
+    memtable->put(KeyValue(5, "five"));
+    memtable->put(KeyValue(6, "six"));    // Second flush
+    FlushSSTInfo info2 = memtable->file_manager.flushToDisk(memtable->getTree()->inOrderFlushToSst());
 
-    EXPECT_EQ(result.size(), 5);
-    EXPECT_EQ(result[100], 1000);
-    EXPECT_EQ(result[150], 1500);
-    EXPECT_EQ(result[200], 2000);
-    EXPECT_EQ(result[250], 2500);
-    EXPECT_EQ(result[300], 3000);
+    // Create SSTIndex instance and manually add SST files to the index
+    SSTIndex sstIndex;
+    sstIndex.set_path(fs::path("test_db"));
+    sstIndex.addSST(info1.fileName, info1.smallest_key, info1.largest_key);
+    sstIndex.addSST(info2.fileName, info2.smallest_key, info2.largest_key);
 
-    deleteSSTFile(sst1);
-    delete sstIndex;
+    // Perform a scan across SST files for a range of key-value pairs
+    set<KeyValue> resultSet;
+    sstIndex.Scan(KeyValue(2, ""), KeyValue(5, ""), resultSet);
+
+    // Verify the scanned result
+    ASSERT_EQ(resultSet.size(), 4);
+    EXPECT_EQ(std::get<int>(resultSet.begin()->getKey()), 2);
+    EXPECT_EQ(std::get<int>(resultSet.rbegin()->getKey()), 5);
+
+    // Clean up
+    delete memtable;
+    fs::remove_all("test_db");
 }
 
+TEST(SSTIndexTest, ScanForNonExistentRangeAcrossSSTFiles) {
+    // Create a Memtable with a small threshold
+    Memtable* memtable = new Memtable(3);
+    memtable->set_path(fs::path("test_db"));
 
-// 100 sst files with each contains 1k kv-pairs.
-TEST(SSTIndexTest, ScanAcrossMultipleSSTFiles) {
-    SSTIndex* index = new SSTIndex();
-    index->set_path("test_db");
+    // Insert key-value pairs and flush the memtable
+    memtable->put(KeyValue(1, "one"));
+    memtable->put(KeyValue(2, "two"));
+    memtable->put(KeyValue(3, "three"));  // First flush
+    FlushSSTInfo info1 = memtable->file_manager.flushToDisk(memtable->getTree()->inOrderFlushToSst());
 
-    const int num_files = 100;      // Number of SST files
-    const int pairs_per_file = 1000; // Key-value pairs per SST file
-    const long long start_key = 1;  // Start key for the first SST file
+    memtable->put(KeyValue(4, "four"));
+    memtable->put(KeyValue(5, "five"));
+    memtable->put(KeyValue(6, "six"));    // Second flush
+    FlushSSTInfo info2 = memtable->file_manager.flushToDisk(memtable->getTree()->inOrderFlushToSst());
 
-    // Create 100 SST files with 1,000 key-value pairs each
-    for (int file_num = 0; file_num < num_files; ++file_num) {
-        std::string filename = "sst_" + std::to_string(file_num) + ".sst";
-        std::ofstream outfile(fs::path("test_db") / filename, std::ios::binary);
-        if (!outfile.is_open()) {
-            throw std::runtime_error("Failed to open SST file for writing");
+    // Create SSTIndex instance and manually add SST files to the index
+    SSTIndex sstIndex;
+    sstIndex.set_path(fs::path("test_db"));
+    sstIndex.addSST(info1.fileName, info1.smallest_key, info1.largest_key);
+    sstIndex.addSST(info2.fileName, info2.smallest_key, info2.largest_key);
+
+    // Perform a scan for a non-existent range
+    set<KeyValue> resultSet;
+    sstIndex.Scan(KeyValue(10, ""), KeyValue(20, ""), resultSet);
+
+    // Verify that no key-value pairs were found
+    EXPECT_EQ(resultSet.size(), 0);
+
+    // Clean up
+    delete memtable;
+    fs::remove_all("test_db");
+}
+
+TEST(SSTIndexTest, ScanForSingleKeyValuePairAcrossSSTFiles) {
+    // Create a Memtable with a small threshold
+    Memtable* memtable = new Memtable(3);
+    memtable->set_path(fs::path("test_db"));
+
+    // Insert key-value pairs and flush the memtable
+    memtable->put(KeyValue(1, "one"));
+    memtable->put(KeyValue(2, "two"));
+    memtable->put(KeyValue(3, "three"));  // First flush
+    FlushSSTInfo info1 = memtable->file_manager.flushToDisk(memtable->getTree()->inOrderFlushToSst());
+
+    memtable->put(KeyValue(4, "four"));
+    memtable->put(KeyValue(5, "five"));
+    memtable->put(KeyValue(6, "six"));    // Second flush
+    FlushSSTInfo info2 = memtable->file_manager.flushToDisk(memtable->getTree()->inOrderFlushToSst());
+
+    // Create SSTIndex instance and manually add SST files to the index
+    SSTIndex sstIndex;
+    sstIndex.set_path(fs::path("test_db"));
+    sstIndex.addSST(info1.fileName, info1.smallest_key, info1.largest_key);
+    sstIndex.addSST(info2.fileName, info2.smallest_key, info2.largest_key);
+
+    // Perform a scan for a single key-value pair
+    set<KeyValue> resultSet;
+    sstIndex.Scan(KeyValue(4, ""), KeyValue(4, ""), resultSet);
+
+    // Verify that only one key-value pair was found
+    ASSERT_EQ(resultSet.size(), 1);
+    EXPECT_EQ(std::get<int>(resultSet.begin()->getKey()), 4);
+    EXPECT_EQ(std::get<string>(resultSet.begin()->getValue()), "four");
+
+    // Clean up
+    delete memtable;
+    fs::remove_all("test_db");
+}
+
+TEST(SSTIndexTest, LargeScaleScanAcrossSSTFiles) {
+    // Create a Memtable with a large threshold
+    Memtable* memtable = new Memtable(100);
+    memtable->set_path(fs::path("test_db"));
+
+    // Create SSTIndex instance and manually add SST files to the index
+    SSTIndex sstIndex;
+    sstIndex.set_path(fs::path("test_db"));
+
+    // Insert 1000 key-value pairs and flush the memtable
+    for (int i = 0; i < 1000; ++i) {
+        KeyValue kv(i, "value_" + std::to_string(i));
+
+        // After every flush (each 1,000 key-value pairs), manually add the SST info to SSTIndex
+        if (i % 100 == 0 && i != 0) {
+            FlushSSTInfo info = memtable->put(kv);
+            sstIndex.addSST(info.fileName, info.smallest_key, info.largest_key);
+            continue;
         }
-
-        long long base_key = start_key + file_num * pairs_per_file;
-        for (long long i = 0; i < pairs_per_file; ++i) {
-            long long key = base_key + i;
-            long long value = key * 10;
-            outfile.write(reinterpret_cast<const char*>(&key), sizeof(long long));
-            outfile.write(",", 1);
-            outfile.write(reinterpret_cast<const char*>(&value), sizeof(long long));
-            outfile.write("\n", 1);
-        }
-        outfile.close();
-
-        // Add this SST file to the index
-        index->addSST(filename, base_key, base_key + pairs_per_file - 1);
+        memtable->put(kv);
     }
 
-    // Perform a scan across all files for a specific range of keys
-    unordered_map<long long, long long> result;
-    long long scan_start_key = 5000; // Start key for scanning
-    long long scan_end_key = 15000;  // End key for scanning
-    index->Scan(scan_start_key, scan_end_key, result);
+    FlushSSTInfo info = memtable->file_manager.flushToDisk(memtable->getTree()->inOrderFlushToSst());
+    sstIndex.addSST(info.fileName, info.smallest_key, info.largest_key);
 
-    // Validate the scan results
-    EXPECT_EQ(result.size(), scan_end_key - scan_start_key + 1);
-    for (long long i = scan_start_key; i <= scan_end_key; ++i) {
-        EXPECT_EQ(result[i], i * 10);
-    }
+    // Perform a scan for a large range of key-value pairs
+    set<KeyValue> resultSet;
+    sstIndex.Scan(KeyValue(100, ""), KeyValue(900, ""), resultSet);
 
-    // Edge case 1: Scan the entire range of keys
-    unordered_map<long long, long long> full_scan_result;
-    index->Scan(start_key, start_key + num_files * pairs_per_file - 1, full_scan_result);
-    EXPECT_EQ(full_scan_result.size(), num_files * pairs_per_file);
-    for (long long i = start_key; i < start_key + num_files * pairs_per_file; ++i) {
-        EXPECT_EQ(full_scan_result[i], i * 10);
-    }
+    // Verify that the correct number of key-value pairs were found
+    EXPECT_EQ(resultSet.size(), 801);
 
-    // Edge case 2: Scan a range with no keys
-    unordered_map<long long, long long> empty_scan_result;
-    index->Scan(start_key - 1000, start_key - 500, empty_scan_result);
-    EXPECT_EQ(empty_scan_result.size(), 0);
-
-    // Edge case 3: Scan a single SST file completely
-    unordered_map<long long, long long> single_file_scan_result;
-    long long single_file_start_key = start_key + 2000;
-    long long single_file_end_key = single_file_start_key + pairs_per_file - 1;
-    index->Scan(single_file_start_key, single_file_end_key, single_file_scan_result);
-    EXPECT_EQ(single_file_scan_result.size(), pairs_per_file);
-    for (long long i = single_file_start_key; i <= single_file_end_key; ++i) {
-        EXPECT_EQ(single_file_scan_result[i], i * 10);
-    }
-
-    delete index;
+    // Clean up
+    delete memtable;
     fs::remove_all("test_db");
 }

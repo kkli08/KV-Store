@@ -43,6 +43,13 @@ uint32_t SSTHeader::calculateChecksum() const {
     return checksum;
 }
 
+/*
+ * .sst File SSTHeader Structure
+ * void SSTHeader::serialize(ofstream&)
+ * ==============================================================================
+ * num_key_values | header_checksum |
+ * ==============================================================================
+ */
 void SSTHeader::serialize(std::ofstream& file) const {
     file.write(reinterpret_cast<const char*>(&num_key_values), sizeof(num_key_values));
     file.write(reinterpret_cast<const char*>(&header_checksum), sizeof(header_checksum));
@@ -85,6 +92,17 @@ uint32_t SerializedKeyValue::calculateChecksum() const {
     return checksum;
 }
 
+/*
+ * .sst File SerializedKeyValue Structure
+ * void SerializedKeyValue::serialize(ofstream&)
+ * ==============================================================================
+ * String Type:
+ * kv_checksum | keyType | str_len | (string) keyValue | valueType | valueValue |
+ * ==============================================================================
+ * Other Type:
+ * kv_checksum | keyType | (T) keyValue | valueType | valueValue |
+ * ==============================================================================
+ */
 void SerializedKeyValue::serialize(std::ofstream& file) const {
     // Write the checksum (total length of the key-value block)
     file.write(reinterpret_cast<const char*>(&kv_checksum), sizeof(kv_checksum));
@@ -170,7 +188,7 @@ SerializedKeyValue SerializedKeyValue::deserialize(std::ifstream& file) {
             break;
         }
         default:
-            throw std::runtime_error("Unsupported key type");
+            throw std::runtime_error("FileManager::SerializedKeyValue::deserialize()::Key >>>> Unsupported key type");
     }
 
     // Read the value type
@@ -214,7 +232,7 @@ SerializedKeyValue SerializedKeyValue::deserialize(std::ifstream& file) {
             break;
         }
         default:
-            throw std::runtime_error("Unsupported value type");
+            throw std::runtime_error("FileManager::SerializedKeyValue::deserialize()::Value >>>> Unsupported value type");
     }
 
     // Now use the KeyValue constructor to set the key and value
@@ -236,12 +254,12 @@ FlushSSTInfo FileManager::flushToDisk(const std::vector<KeyValue>& kv_pairs) {
 
     // Make sure directory exists
     if (!fs::exists(directory)) {
-        throw std::runtime_error("Directory does not exist: " + directory.string());
+        throw std::runtime_error("FileManager::flushToDisk() >>>> Directory does not exist: " + directory.string());
     }
 
     std::ofstream file(directory / flushInfo.fileName, std::ios::binary);
     if (!file.is_open()) {
-        throw std::runtime_error("Could not open SST file for writing.");
+        throw std::runtime_error("FileManager::flushToDisk() >>>> Could not open SST file for writing.");
     }
 
     if (kv_pairs.size() < 1) return flushInfo;
@@ -272,7 +290,7 @@ RedBlackTree* FileManager::loadFromDisk(const std::string& sst_filename) {
     // Open the SST file
     std::ifstream file(directory / sst_filename, std::ios::binary);
     if (!file.is_open()) {
-        throw std::runtime_error("Could not open SST file for reading.");
+        throw std::runtime_error("FileManager::loadFromDisk() >>>> Could not open SST file for reading.");
     }
 
     // Check if the file is empty

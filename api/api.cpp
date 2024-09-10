@@ -158,14 +158,14 @@ namespace kvdb {
   }
 
   // Debug helper function
-  void API::IndexCheck() {
-    cout << "\n-->Inside API::IndexCheck()" << endl;
-    for(auto& info : index->getSSTsIndex()) {
-      cout << info->filename << "'s smallest key: " << info->smallest_key << " and largest key: " << info->largest_key << endl;
-    }
-    cout << "\n-->Inside Index.sst" << endl;
-    index->printSSRsInFile();
-  }
+  // void API::IndexCheck() {
+  //   cout << "\n-->Inside API::IndexCheck()" << endl;
+  //   for(auto& info : index->getSSTsIndex()) {
+  //     cout << info->filename << "'s smallest key: " << info->smallest_key << " and largest key: " << info->largest_key << endl;
+  //   }
+  //   cout << "\n-->Inside Index.sst" << endl;
+  //   index->printSSRsInFile();
+  // }
 
 
 }

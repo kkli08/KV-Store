@@ -13,7 +13,7 @@ void kvdb::API::Put(K key, V value) {
         // cout << "\n>>>>>> Ready for flushing" << endl;
         // cout << info->fileName << "'s smallest key: " << info->smallest_key << " and largest key: " << info->largest_key << endl;
 
-        // // flush happens and safe access info attribute
-        //   index->addSST(info.fileName, info.smallest_key, info.largest_key);
+        // flush happens and safe access info attribute
+          index->addSST(info.fileName, info.smallest_key, info.largest_key);
     }
 }
