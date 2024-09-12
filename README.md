@@ -78,7 +78,7 @@ TBA
 ### SST File Layout
 > 2024-09-09
 >
-![SSTLayout](/img/SSTFileLayout_withInFileIdx.jpg)
+![SSTLayout](/img/SSTFileLayout_v1.1.jpg)
 
 ### UML
 > 2024-09-02 
