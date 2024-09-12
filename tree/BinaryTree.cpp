@@ -25,26 +25,25 @@ void BinaryTree::destroyTree(const TreeNode* node) {
     }
 }
 
-// Internal insert method (uses KeyValue objects)
-void BinaryTree::insert(TreeNode*& node, KeyValue kv) {
+// Internal insert method (uses KeyValueWrapper objects)
+void BinaryTree::insert(TreeNode*& node, KeyValueWrapper kv) {
     if (node == nullptr) {
-        // If the node is null, create a new TreeNode with the KeyValue
+        // If the node is null, create a new TreeNode with the KeyValueWrapper
         node = new TreeNode(kv);
     } else if (kv < node->keyValue) {
-        // Compare KeyValue instances directly using operator<
+        // Compare KeyValueWrapper instances directly using operator<
         insert(node->left, kv);
     } else {
         insert(node->right, kv);
     }
 }
 
-
-// Search for a key in the tree using KeyValue
-bool BinaryTree::search(const KeyValue& kv) {
+// Search for a key in the tree using KeyValueWrapper
+bool BinaryTree::search(const KeyValueWrapper& kv) {
     return search(root, kv);
 }
 
-bool BinaryTree::search(TreeNode* node, const KeyValue& kv) {
+bool BinaryTree::search(TreeNode* node, const KeyValueWrapper& kv) {
     if (node == nullptr) {
         return false;  // Not found
     } else if (kv < node->keyValue) {
@@ -56,7 +55,6 @@ bool BinaryTree::search(TreeNode* node, const KeyValue& kv) {
     }
 }
 
-
 // Inorder traversal
 void BinaryTree::inorderTraversal() {
     inorderTraversal(root);
@@ -66,7 +64,7 @@ void BinaryTree::inorderTraversal() {
 void BinaryTree::inorderTraversal(TreeNode* node) {
     if (node != nullptr) {
         inorderTraversal(node->left);
-        node->keyValue.printKeyValue();
+        node->keyValue.printKeyValue();  // Use the KeyValueWrapper's print method
         inorderTraversal(node->right);
     }
 }
@@ -79,7 +77,7 @@ void BinaryTree::preorderTraversal() {
 
 void BinaryTree::preorderTraversal(TreeNode* node) {
     if (node != nullptr) {
-        node->keyValue.printKeyValue();
+        node->keyValue.printKeyValue();  // Use the KeyValueWrapper's print method
         preorderTraversal(node->left);
         preorderTraversal(node->right);
     }
@@ -95,13 +93,12 @@ void BinaryTree::postorderTraversal(TreeNode* node) {
     if (node != nullptr) {
         postorderTraversal(node->left);
         postorderTraversal(node->right);
-        node->keyValue.printKeyValue();
+        node->keyValue.printKeyValue();  // Use the KeyValueWrapper's print method
     }
 }
 
-// Scan between two keys
-// Scan between two keys using std::map to maintain sorted order
-void BinaryTree::Scan(TreeNode* node, const KeyValue& small_key, const KeyValue& large_key, std::set<KeyValue>& res) {
+// Scan between two keys using std::set to maintain sorted order
+void BinaryTree::Scan(TreeNode* node, const KeyValueWrapper& small_key, const KeyValueWrapper& large_key, std::set<KeyValueWrapper>& res) {
     if (!node) return;
 
     // Prune left subtree if the current node's key is greater than the small_key
@@ -109,7 +106,7 @@ void BinaryTree::Scan(TreeNode* node, const KeyValue& small_key, const KeyValue&
         Scan(node->left, small_key, large_key, res);
     }
 
-    // If the current node's key is within the range, add it to the result map
+    // If the current node's key is within the range, add it to the result set
     if (!(node->keyValue < small_key) && !(large_key < node->keyValue)) {
         res.insert(node->keyValue);
     }
@@ -119,6 +116,3 @@ void BinaryTree::Scan(TreeNode* node, const KeyValue& small_key, const KeyValue&
         Scan(node->right, small_key, large_key, res);
     }
 }
-
-
-

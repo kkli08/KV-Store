@@ -8,6 +8,7 @@
 #include "TreeNode.h"
 #include "KeyValue.h"
 #include <set>
+
 using namespace std;
 
 class BinaryTree {
@@ -18,8 +19,9 @@ public:
     // Templated insert method
     template<typename K, typename V>
     void insert(K key, V value);
-    bool search(const KeyValue& kv);  // Search using KeyValue
-    // Templated search method
+
+    // Search methods
+    bool search(const KeyValueWrapper& kv);  // Search using KeyValueWrapper
     template<typename K>
     bool search(K key);
 
@@ -30,26 +32,27 @@ public:
     void preorderTraversal();
     void postorderTraversal();
 
-    // void Scan(TreeNode* node, long long small_key, long long large_key, unordered_map<long long, KeyValue>& res);
-    void Scan(TreeNode* node, const KeyValue& small_key, const KeyValue& large_key, std::set<KeyValue>& res);
+    // Scan method using KeyValueWrapper
+    void Scan(TreeNode* node, const KeyValueWrapper& small_key, const KeyValueWrapper& large_key, std::set<KeyValueWrapper>& res);
 
 protected:
     TreeNode *root;
 
-    // Internal insert method using KeyValue
-    void insert(TreeNode*& node, KeyValue kv);
+    // Internal insert method using KeyValueWrapper
+    void insert(TreeNode*& node, KeyValueWrapper kv);
 
-    bool search(TreeNode* node, const KeyValue& kv);  // Internal search
+    // Internal search method
+    bool search(TreeNode* node, const KeyValueWrapper& kv);
 
     // Traverse methods
     void inorderTraversal(TreeNode* node);
     void preorderTraversal(TreeNode* node);
     void postorderTraversal(TreeNode* node);
 
+    // Utility to destroy the tree
     static void destroyTree(const TreeNode* node);
 };
 
 #include "BinaryTree.tpp"  // Include the templated method implementations
 
 #endif // BINARYTREE_H
-

@@ -1,42 +1,50 @@
 template<typename K, typename V>
-KeyValue::KeyValue(K k, V v)
-    : key(convertToVariant(k)), value(convertToVariant(v)) {
-    keyType = std::visit([&](auto&& arg) {
-        return deduceType(arg);  // Deduce the actual type of the key
-    }, key);
-    valueType = std::visit([&](auto&& arg) {
-        return deduceType(arg);  // Deduce the actual type of the value
-    }, value);
+KeyValueWrapper::KeyValueWrapper(K key, V value) {
+    setKey(key);   // Use Protobuf to set the key
+    setValue(value); // Use Protobuf to set the value
 }
 
-
+// Helper functions to set the key and value in the Protobuf object
 template<typename T>
-KeyValue::KeyValueType KeyValue::deduceType(const T& value) const {
+void KeyValueWrapper::setKey(T key) {
     if constexpr (std::is_same_v<T, int>) {
-        return KeyValueType::INT;
+        kv.set_int_key(key);
+        kv.set_key_type(KeyValue::INT);
     } else if constexpr (std::is_same_v<T, long long>) {
-        return KeyValueType::LONG;
+        kv.set_long_key(key);
+        kv.set_key_type(KeyValue::LONG);
     } else if constexpr (std::is_same_v<T, double>) {
-        return KeyValueType::DOUBLE;
-    } else if constexpr (std::is_same_v<T, char>) {
-        return KeyValueType::CHAR;
+        kv.set_double_key(key);
+        kv.set_key_type(KeyValue::DOUBLE);
     } else if constexpr (std::is_same_v<T, std::string>) {
-        return KeyValueType::STRING;
-    } else if constexpr (std::is_same_v<T, const char*> || std::is_same_v<T, char*>) {
-        return KeyValueType::STRING;  // Treat C-style strings as std::string
+        kv.set_string_key(key);
+        kv.set_key_type(KeyValue::STRING);
+    } else if constexpr (std::is_same_v<T, char>) {
+        kv.set_char_key(std::string(1, key));  // Store char as string
+        kv.set_key_type(KeyValue::CHAR);
     } else {
-        std::cerr << "Unsupported type: " << typeid(value).name() << std::endl;
-        throw std::invalid_argument("Unsupported type");
+        throw std::invalid_argument("Unsupported key type");
     }
 }
 
-
-// Helper function to convert types like const char* to std::string
 template<typename T>
-KeyValue::KeyType KeyValue::convertToVariant(const T& value) const {
-    if constexpr (std::is_same_v<T, const char*> || std::is_same_v<T, char*>) {
-        return std::string(value);  // Convert C-string to std::string
+void KeyValueWrapper::setValue(T value) {
+    if constexpr (std::is_same_v<T, int>) {
+        kv.set_int_value(value);
+        kv.set_value_type(KeyValue::INT);
+    } else if constexpr (std::is_same_v<T, long long>) {
+        kv.set_long_value(value);
+        kv.set_value_type(KeyValue::LONG);
+    } else if constexpr (std::is_same_v<T, double>) {
+        kv.set_double_value(value);
+        kv.set_value_type(KeyValue::DOUBLE);
+    } else if constexpr (std::is_same_v<T, std::string>) {
+        kv.set_string_value(value);
+        kv.set_value_type(KeyValue::STRING);
+    } else if constexpr (std::is_same_v<T, char>) {
+        kv.set_char_value(std::string(1, value));  // Store char as string
+        kv.set_value_type(KeyValue::CHAR);
     } else {
-        return value;  // Return as-is for other types
+        throw std::invalid_argument("Unsupported value type");
     }
 }

@@ -7,6 +7,13 @@ project(KVStore)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Find the required protobuf package
+find_package(Protobuf REQUIRED)
+
+# Specify the location of the generated .pb.cc and .pb.h files
+set(PROTO_SRCS ${PROJECT_SOURCE_DIR}/kv/KeyValue.pb.cc)
+set(PROTO_HDRS ${PROJECT_SOURCE_DIR}/kv/KeyValue.pb.h)
+
 # Include GoogleTest via FetchContent
 include(FetchContent)
 FetchContent_Declare(
@@ -46,10 +53,11 @@ add_executable(runTests
         AesEncryption/Encryption.h
         kv/KeyValue.cpp
         FileManager/FileManager.cpp
+        ${PROTO_SRCS}
 )
 
 # Link Google Test and OpenSSL to the test executable
-target_link_libraries(runTests gtest gtest_main OpenSSL::Crypto)
+target_link_libraries(runTests gtest gtest_main OpenSSL::Crypto ${Protobuf_LIBRARIES})
 
 # Register tests with CTest
 add_test(NAME runTests COMMAND runTests)
@@ -70,7 +78,8 @@ set(SOURCE_FILES
 )
 
 # Add the executable
-add_executable(main ${SOURCE_FILES})
+add_executable(main ${SOURCE_FILES} ${PROTO_SRCS})
+target_link_libraries(main ${Protobuf_LIBRARIES})
 
 # Include directories (header files)
 include_directories(

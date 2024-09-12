@@ -1,73 +1,59 @@
 //
 // Created by Damian Li on 2024-09-07.
 //
-#include <variant> // c++17 new features
-#include <string>
+#include "KeyValue.pb.h"
 #include <iostream>
+#include <stdexcept>
+#include <string>
 
-
-#ifndef KEYVALUE_H
-#define KEYVALUE_H
-
+#ifndef KEYVALUEWRAPPER_H
+#define KEYVALUEWRAPPER_H
 
 using namespace std;
 
-class KeyValue {
+class KeyValueWrapper {
 public:
-    // Enum to record the type of key and value
-    enum class KeyValueType { INT, LONG, DOUBLE, CHAR, STRING };
-
-    using KeyType = std::variant<int, long long, double, char, std::string>;
-    using ValueType = std::variant<int, long long, double, char, std::string>;
-
-    // default constructor
-    KeyValue() : key(0), value(0), keyType(KeyValueType::INT), valueType(KeyValueType::INT) {};
+    // Default constructor
+    KeyValueWrapper() = default;
 
     // Templated constructor that automatically deduces the type
     template<typename K, typename V>
-    KeyValue(K k, V v);
+    KeyValueWrapper(K key, V value);
 
     // Accessor methods
-    KeyType getKey() const;
-    ValueType getValue() const;
-    KeyValueType getKeyType() const;
-    KeyValueType getValueType() const;
+    KeyValue::KeyValueType getKeyType() const { return kv.key_type(); }
+    KeyValue::KeyValueType getValueType() const { return kv.value_type(); }
+
+    // Print key-value pair
+    void printKeyValue() const;
+    string keyValueTypeToString(KeyValue::KeyValueType type) const;
 
     // Comparison operator for keys
-    bool operator<(const KeyValue& other) const;
-    bool operator>(const KeyValue& other) const;
-    bool operator<=(const KeyValue& other) const;
-    bool operator>=(const KeyValue& other) const;
-    bool operator==(const KeyValue& other) const;
+    bool operator<(const KeyValueWrapper& other) const;
+    bool operator>(const KeyValueWrapper& other) const;
+    bool operator<=(const KeyValueWrapper& other) const;
+    bool operator>=(const KeyValueWrapper& other) const;
+    bool operator==(const KeyValueWrapper& other) const;
 
-    // Print key-value
-    void printKeyValue() const;
-
-    // Convert enum to string for printing purposes
-    static std::string keyValueTypeToString(KeyValueType type);
+    // Serialize and Deserialize methods
+    void serialize(std::ostream& os) const;
+    static KeyValueWrapper deserialize(std::istream& is);
 
     bool isEmpty() const;
-
+    KeyValue kv;  // Protobuf-generated KeyValue object
 
 
 private:
 
-    KeyType key;
-    ValueType value;
-    KeyValueType keyType;
-    KeyValueType valueType;
-    // Function to deduce the type of the key and value and return the corresponding enum
+    // Helper to deduce and set the key type in Protobuf
     template<typename T>
-    KeyValueType deduceType(const T& value) const;
+    void setKey(T key);
 
-    // Function to convert const char* to std::string
+    // Helper to deduce and set the value type in Protobuf
     template<typename T>
-    KeyType convertToVariant(const T& value) const;  // Declared here
+    void setValue(T value);
 };
 
-#include "KeyValue.tpp"  // Include the implementation for templated functions
+#include "KeyValue.tpp"
 
-
-
-
-#endif //KEYVALUE_H
+#endif

@@ -2,133 +2,137 @@
 // Created by Damian Li on 2024-09-07.
 //
 #include "KeyValue.h"
+#include "KeyValue.pb.h"
 #include <iostream>
 #include <stdexcept>
 #include <fstream>
 using namespace std;
-// Accessor methods
-KeyValue::KeyType KeyValue::getKey() const {
-    return key;
+
+void KeyValueWrapper::serialize(std::ostream& os) const {
+    kv.SerializeToOstream(&os);  // Use Protobuf serialization
 }
 
-KeyValue::ValueType KeyValue::getValue() const {
-    return value;
+KeyValueWrapper KeyValueWrapper::deserialize(std::istream& is) {
+    KeyValue kv;
+    kv.ParseFromIstream(&is);  // Use Protobuf deserialization
+    KeyValueWrapper wrapper;
+    wrapper.kv = kv;
+    return wrapper;
 }
 
-KeyValue::KeyValueType KeyValue::getKeyType() const {
-    return keyType;
+bool KeyValueWrapper::isEmpty() const {
+    return kv.key_case() == KeyValue::KEY_NOT_SET || kv.value_case() == KeyValue::VALUE_NOT_SET;
 }
 
-KeyValue::KeyValueType KeyValue::getValueType() const {
-    return valueType;
-}
+
 
 // Comparison operator
-bool KeyValue::operator<(const KeyValue& other) const {
-    return std::visit([](auto&& arg1, auto&& arg2) -> bool {
-        using T1 = std::decay_t<decltype(arg1)>;
-        using T2 = std::decay_t<decltype(arg2)>;
-
-        if constexpr (std::is_same_v<T1, T2>) {
-            // If both types are the same, compare them normally
-            if constexpr (std::is_arithmetic_v<T1>) {
-                return arg1 < arg2;  // Numeric comparison
-            } else {
-                return arg1 < arg2;  // Lexicographical comparison for strings and chars
-            }
-        } else if constexpr (std::is_arithmetic_v<T1> && std::is_arithmetic_v<T2>) {
-            // Handle mixed numeric type comparisons (e.g., int vs double)
-            return static_cast<double>(arg1) < static_cast<double>(arg2);
-        } else {
-            // If types differ, prioritize numeric vs. string/char comparison
-            if constexpr (std::is_arithmetic_v<T1> && (std::is_same_v<T2, std::string> || std::is_same_v<T2, char>)) {
-                return true;  // Numeric is always smaller than string/char
-            } else if constexpr ((std::is_same_v<T1, std::string> || std::is_same_v<T1, char>) && std::is_arithmetic_v<T2>) {
-                return false;  // String/char is always larger than numeric
-            } else {
-                throw std::invalid_argument("Unsupported type comparison");
-            }
-        }
-    }, this->key, other.getKey());
+bool KeyValueWrapper::operator<(const KeyValueWrapper& other) const {
+    // Compare based on which key type is set in the Protobuf message
+    if (kv.has_int_key() && other.kv.has_int_key()) {
+        return kv.int_key() < other.kv.int_key();
+    } else if (kv.has_long_key() && other.kv.has_long_key()) {
+        return kv.long_key() < other.kv.long_key();
+    } else if (kv.has_double_key() && other.kv.has_double_key()) {
+        return kv.double_key() < other.kv.double_key();
+    } else if (kv.has_string_key() && other.kv.has_string_key()) {
+        return kv.string_key() < other.kv.string_key();
+    } else if (kv.has_char_key() && other.kv.has_char_key()) {
+        return kv.char_key() < other.kv.char_key();
+    } else if (kv.has_int_key() && other.kv.has_string_key()) {
+        return true;  // Numeric keys are smaller than strings
+    } else if (kv.has_string_key() && other.kv.has_int_key()) {
+        return false;  // String keys are larger than numeric keys
+    }
+    throw std::invalid_argument("Unsupported or mismatched key types for comparison.");
 }
+
 
 
 
 // Define operator> in terms of operator<
-bool KeyValue::operator>(const KeyValue& other) const {
+bool KeyValueWrapper::operator>(const KeyValueWrapper& other) const {
     return other < *this;
 }
 
+
 // Define operator<= in terms of operator<
-bool KeyValue::operator<=(const KeyValue& other) const {
+bool KeyValueWrapper::operator<=(const KeyValueWrapper& other) const {
     return !(other < *this);
 }
 
+
 // Define operator>= in terms of operator<
-bool KeyValue::operator>=(const KeyValue& other) const {
+bool KeyValueWrapper::operator>=(const KeyValueWrapper& other) const {
     return !(*this < other);
 }
 
+
 // Comparison operator for key equality
 // Only for key
-bool KeyValue::operator==(const KeyValue& other) const {
-    // Compare the keys using std::visit
-    bool keysEqual = std::visit([](auto&& arg1, auto&& arg2) -> bool {
-        using T1 = std::decay_t<decltype(arg1)>;
-        using T2 = std::decay_t<decltype(arg2)>;
-        if constexpr (std::is_same_v<T1, T2>) {
-            return arg1 == arg2;  // Compare if both types are the same
-        } else if constexpr (std::is_arithmetic_v<T1> && std::is_arithmetic_v<T2>) {
-            // Compare different numeric types by casting them to double
-            /*
-             * if type matters, comment else if statement
-             */
-            return static_cast<double>(arg1) == static_cast<double>(arg2);
-        } else {
-            return false;  // Different types are not equal
-        }
-    }, this->key, other.getKey());
-
-    // keys must be equal
-    return keysEqual;
+bool KeyValueWrapper::operator==(const KeyValueWrapper& other) const {
+    if (kv.has_int_key() && other.kv.has_int_key()) {
+        return kv.int_key() == other.kv.int_key();
+    } else if (kv.has_long_key() && other.kv.has_long_key()) {
+        return kv.long_key() == other.kv.long_key();
+    } else if (kv.has_double_key() && other.kv.has_double_key()) {
+        return kv.double_key() == other.kv.double_key();
+    } else if (kv.has_string_key() && other.kv.has_string_key()) {
+        return kv.string_key() == other.kv.string_key();
+    } else if (kv.has_char_key() && other.kv.has_char_key()) {
+        return kv.char_key() == other.kv.char_key();
+    }
+    // Different types can't be equal
+    return false;
 }
+
 
 
 // Print key-value
-void KeyValue::printKeyValue() const {
-    std::cout << "Key Type: " << keyValueTypeToString(keyType) << std::endl;
-    std::visit([](auto&& arg) { std::cout << "Key: " << arg << std::endl; }, key);
+void KeyValueWrapper::printKeyValue() const {
+    std::cout << "Key Type: " << KeyValueWrapper::keyValueTypeToString(kv.key_type()) << std::endl;
 
-    std::cout << "Value Type: " << keyValueTypeToString(valueType) << std::endl;
-    std::visit([](auto&& arg) { std::cout << "Value: " << arg << std::endl; }, value);
+    if (kv.has_int_key()) {
+        std::cout << "Key: " << kv.int_key() << std::endl;
+    } else if (kv.has_long_key()) {
+        std::cout << "Key: " << kv.long_key() << std::endl;
+    } else if (kv.has_double_key()) {
+        std::cout << "Key: " << kv.double_key() << std::endl;
+    } else if (kv.has_string_key()) {
+        std::cout << "Key: " << kv.string_key() << std::endl;
+    } else if (kv.has_char_key()) {
+        std::cout << "Key: " << kv.char_key() << std::endl;
+    }
+
+    std::cout << "Value Type: " << KeyValueWrapper::keyValueTypeToString(kv.value_type()) << std::endl;
+
+    if (kv.has_int_value()) {
+        std::cout << "Value: " << kv.int_value() << std::endl;
+    } else if (kv.has_long_value()) {
+        std::cout << "Value: " << kv.long_value() << std::endl;
+    } else if (kv.has_double_value()) {
+        std::cout << "Value: " << kv.double_value() << std::endl;
+    } else if (kv.has_string_value()) {
+        std::cout << "Value: " << kv.string_value() << std::endl;
+    } else if (kv.has_char_value()) {
+        std::cout << "Value: " << kv.char_value() << std::endl;
+    }
 }
 
+
 // Enum to string conversion
-std::string KeyValue::keyValueTypeToString(KeyValueType type) {
+std::string KeyValueWrapper::keyValueTypeToString(KeyValue::KeyValueType type) const {
     switch (type) {
-        case KeyValueType::INT: return "INT";
-        case KeyValueType::LONG: return "LONG";
-        case KeyValueType::DOUBLE: return "DOUBLE";
-        case KeyValueType::CHAR: return "CHAR";
-        case KeyValueType::STRING: return "STRING";
+        case KeyValue::INT: return "INT";
+        case KeyValue::LONG: return "LONG";
+        case KeyValue::DOUBLE: return "DOUBLE";
+        case KeyValue::CHAR: return "CHAR";
+        case KeyValue::STRING: return "STRING";
         default: return "UNKNOWN";
     }
 }
 
-// Method to check if the KeyValue is empty (no valid key or value)
-bool KeyValue::isEmpty() const {
-    return std::visit([](auto&& arg) -> bool {
-        using T = std::decay_t<decltype(arg)>;
-        // Check if the value is the default for its type (e.g., 0 for int, empty string, etc.)
-        if constexpr (std::is_arithmetic_v<T>) {
-            return arg == 0;
-        } else if constexpr (std::is_same_v<T, std::string>) {
-            return arg.empty();
-        } else if constexpr (std::is_same_v<T, char>) {
-            return arg == '\0';
-        }
-        return true;  // Handle other cases as empty
-    }, this->key);
-}
+
+
 
 

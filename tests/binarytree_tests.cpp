@@ -6,15 +6,15 @@
 
 // Test for Insert and Search operations
 TEST(BinaryTreeTest, InsertAndSearch) {
-    BinaryTree *tree = new BinaryTree();
+    BinaryTree* tree = new BinaryTree();
     tree->insert(5, 29);
     tree->insert(3, 23);
     tree->insert(7, 47);
 
-    EXPECT_TRUE(tree->search(5));
-    EXPECT_TRUE(tree->search(3));
-    EXPECT_TRUE(tree->search(7));
-    EXPECT_FALSE(tree->search(10));
+    EXPECT_TRUE(tree->search(KeyValueWrapper(5, 0)));
+    EXPECT_TRUE(tree->search(KeyValueWrapper(3, 0)));
+    EXPECT_TRUE(tree->search(KeyValueWrapper(7, 0)));
+    EXPECT_FALSE(tree->search(KeyValueWrapper(10, 0)));
 
     delete tree;  // Clean up memory
 }
@@ -25,10 +25,10 @@ TEST(BinaryTreeTest, InsertAndSearchStringKey) {
     tree->insert(std::string("banana"), 200);
     tree->insert(std::string("cherry"), 300);
 
-    EXPECT_TRUE(tree->search(std::string("apple")));
-    EXPECT_TRUE(tree->search(std::string("banana")));
-    EXPECT_TRUE(tree->search(std::string("cherry")));
-    EXPECT_FALSE(tree->search(std::string("grape")));
+    EXPECT_TRUE(tree->search(KeyValueWrapper(std::string("apple"), 0)));
+    EXPECT_TRUE(tree->search(KeyValueWrapper(std::string("banana"), 0)));
+    EXPECT_TRUE(tree->search(KeyValueWrapper(std::string("cherry"), 0)));
+    EXPECT_FALSE(tree->search(KeyValueWrapper(std::string("grape"), 0)));
 
     delete tree;  // Clean up memory
 }
@@ -39,10 +39,10 @@ TEST(BinaryTreeTest, InsertAndSearchDoubleKey) {
     tree->insert(2.2, 20);
     tree->insert(3.3, 30);
 
-    EXPECT_TRUE(tree->search(1.1));
-    EXPECT_TRUE(tree->search(2.2));
-    EXPECT_TRUE(tree->search(3.3));
-    EXPECT_FALSE(tree->search(4.4));
+    EXPECT_TRUE(tree->search(KeyValueWrapper(1.1, 0)));
+    EXPECT_TRUE(tree->search(KeyValueWrapper(2.2, 0)));
+    EXPECT_TRUE(tree->search(KeyValueWrapper(3.3, 0)));
+    EXPECT_FALSE(tree->search(KeyValueWrapper(4.4, 0)));
 
     delete tree;  // Clean up memory
 }
@@ -53,12 +53,12 @@ TEST(BinaryTreeTest, InsertAndSearchMixedKeys) {
     tree->insert(3.14, 314);
     tree->insert(std::string("key123"), 123);
 
-    EXPECT_TRUE(tree->search(100));
-    EXPECT_TRUE(tree->search(3.14));
-    EXPECT_TRUE(tree->search(std::string("key123")));
-    EXPECT_FALSE(tree->search(200));
-    EXPECT_FALSE(tree->search(6.28));
-    EXPECT_FALSE(tree->search(std::string("non_existent_key")));
+    EXPECT_TRUE(tree->search(KeyValueWrapper(100, 0)));
+    EXPECT_TRUE(tree->search(KeyValueWrapper(3.14, 0)));
+    EXPECT_TRUE(tree->search(KeyValueWrapper(std::string("key123"), 0)));
+    EXPECT_FALSE(tree->search(KeyValueWrapper(200, 0)));
+    EXPECT_FALSE(tree->search(KeyValueWrapper(6.28, 0)));
+    EXPECT_FALSE(tree->search(KeyValueWrapper(std::string("non_existent_key"), 0)));
 
     delete tree;  // Clean up memory
 }
@@ -127,19 +127,19 @@ TEST(BinaryTreeTest, BasicScanBetweenKeys) {
     tree->insert(7, "value7");
 
     // Set up the result set to store the output of the scan
-    std::set<KeyValue> result;
+    std::set<KeyValueWrapper> result;
 
     // Scan between keys 3 and 15 (inclusive)
-    tree->Scan(tree->getRoot(), KeyValue(3, ""), KeyValue(15, ""), result);
+    tree->Scan(tree->getRoot(), KeyValueWrapper(3, ""), KeyValueWrapper(15, ""), result);
 
     // Verify the output
     EXPECT_EQ(result.size(), 5);  // There should be 5 nodes in range
     auto it = result.begin();
-    EXPECT_EQ(std::get<int>(it->getKey()), 3); it++;
-    EXPECT_EQ(std::get<int>(it->getKey()), 5); it++;
-    EXPECT_EQ(std::get<int>(it->getKey()), 7); it++;
-    EXPECT_EQ(std::get<int>(it->getKey()), 10); it++;
-    EXPECT_EQ(std::get<int>(it->getKey()), 15);
+    EXPECT_EQ(it->getKey().int_key(), 3); it++;
+    EXPECT_EQ(it->getKey().int_key(), 5); it++;
+    EXPECT_EQ(it->getKey().int_key(), 7); it++;
+    EXPECT_EQ(it->getKey().int_key(), 10); it++;
+    EXPECT_EQ(it->getKey().int_key(), 15);
 
     delete tree;
 }
@@ -153,15 +153,15 @@ TEST(BinaryTreeTest, ScanWithOneKeyInRange) {
     tree->insert(15, "value15");
 
     // Set up the result set to store the output of the scan
-    std::set<KeyValue> result;
+    std::set<KeyValueWrapper> result;
 
     // Scan between keys 8 and 12 (only key 10 should be in the range)
-    tree->Scan(tree->getRoot(), KeyValue(8, ""), KeyValue(12, ""), result);
+    tree->Scan(tree->getRoot(), KeyValueWrapper(8, ""), KeyValueWrapper(12, ""), result);
 
     // Verify the output
     EXPECT_EQ(result.size(), 1);  // Only one node should be in range
     auto it = result.begin();
-    EXPECT_EQ(std::get<int>(it->getKey()), 10);
+    EXPECT_EQ(it->getKey().int_key(), 10);
 
     delete tree;
 }
@@ -175,10 +175,10 @@ TEST(BinaryTreeTest, ScanWithNoKeysInRange) {
     tree->insert(15, "value15");
 
     // Set up the result set to store the output of the scan
-    std::set<KeyValue> result;
+    std::set<KeyValueWrapper> result;
 
     // Scan between keys 20 and 30 (no nodes should be in the range)
-    tree->Scan(tree->getRoot(), KeyValue(20, ""), KeyValue(30, ""), result);
+    tree->Scan(tree->getRoot(), KeyValueWrapper(20, ""), KeyValueWrapper(30, ""), result);
 
     // Verify the output
     EXPECT_TRUE(result.empty());  // The result set should be empty
@@ -198,21 +198,21 @@ TEST(BinaryTreeTest, ScanWithMixedKeyTypes) {
     tree->insert(3, "value3");              // int
 
     // Set up the result set to store the output of the scan
-    std::set<KeyValue> result;
+    std::set<KeyValueWrapper> result;
 
     // Scan between int key 3 and string "keyString"
-    tree->Scan(tree->getRoot(), KeyValue(3, ""), KeyValue("keyString", ""), result);
+    tree->Scan(tree->getRoot(), KeyValueWrapper(3, ""), KeyValueWrapper("keyString", ""), result);
 
     // Verify the output
     EXPECT_EQ(result.size(), 5);  // All nodes should be in range (3, 7, 5.5, 10, "keyString")
     auto it = result.begin();
 
     // Check for the key types and their expected values
-    if (std::holds_alternative<int>(it->getKey())) EXPECT_EQ(std::get<int>(it->getKey()), 3); it++;
-    if (std::holds_alternative<int>(it->getKey())) EXPECT_EQ(std::get<int>(it->getKey()), 7); it++;
-    if (std::holds_alternative<double>(it->getKey())) EXPECT_EQ(std::get<double>(it->getKey()), 5.5); it++;
-    if (std::holds_alternative<int>(it->getKey())) EXPECT_EQ(std::get<int>(it->getKey()), 10); it++;
-    if (std::holds_alternative<std::string>(it->getKey())) EXPECT_EQ(std::get<std::string>(it->getKey()), "keyString");
+    if (it->getKey().has_int_key()) EXPECT_EQ(it->getKey().int_key(), 3); it++;
+    if (it->getKey().has_int_key()) EXPECT_EQ(it->getKey().int_key(), 7); it++;
+    if (it->getKey().has_double_key()) EXPECT_EQ(it->getKey().double_key(), 5.5); it++;
+    if (it->getKey().has_int_key()) EXPECT_EQ(it->getKey().int_key(), 10); it++;
+    if (it->getKey().has_string_key()) EXPECT_EQ(it->getKey().string_key(), "keyString");
 
     delete tree;
 }
@@ -229,19 +229,19 @@ TEST(BinaryTreeTest, ScanWithNumericAndStringKeys) {
     tree->insert("banana", "valueBanana");
 
     // Set up the result set to store the output of the scan
-    std::set<KeyValue> result;
+    std::set<KeyValueWrapper> result;
 
     // Scan between numeric key 2 and string "banana"
-    tree->Scan(tree->getRoot(), KeyValue(2, ""), KeyValue("banana", ""), result);
+    tree->Scan(tree->getRoot(), KeyValueWrapper(2, ""), KeyValueWrapper("banana", ""), result);
 
     // Verify the output
     EXPECT_EQ(result.size(), 4);  // Should include 2.2, 3, "apple", "banana"
     auto it = result.begin();
 
-    if (std::holds_alternative<double>(it->getKey())) EXPECT_EQ(std::get<double>(it->getKey()), 2.2); it++;
-    if (std::holds_alternative<int>(it->getKey())) EXPECT_EQ(std::get<int>(it->getKey()), 3); it++;
-    if (std::holds_alternative<std::string>(it->getKey())) EXPECT_EQ(std::get<std::string>(it->getKey()), "apple"); it++;
-    if (std::holds_alternative<std::string>(it->getKey())) EXPECT_EQ(std::get<std::string>(it->getKey()), "banana");
+    if (it->getKey().has_double_key()) EXPECT_EQ(it->getKey().double_key(), 2.2); it++;
+    if (it->getKey().has_int_key()) EXPECT_EQ(it->getKey().int_key(), 3); it++;
+    if (it->getKey().has_string_key()) EXPECT_EQ(it->getKey().string_key(), "apple"); it++;
+    if (it->getKey().has_string_key()) EXPECT_EQ(it->getKey().string_key(), "banana");
 
     delete tree;
 }
@@ -257,19 +257,19 @@ TEST(BinaryTreeTest, ScanWithLongAndCharKeys) {
     tree->insert(75LL, "valueLong75");     // long long
 
     // Set up the result set to store the output of the scan
-    std::set<KeyValue> result;
+    std::set<KeyValueWrapper> result;
 
     // Scan between long key 50 and char 'z'
-    tree->Scan(tree->getRoot(), KeyValue(50LL, ""), KeyValue('z', ""), result);
+    tree->Scan(tree->getRoot(), KeyValueWrapper(50LL, ""), KeyValueWrapper('z', ""), result);
 
     // Verify the output
     EXPECT_EQ(result.size(), 5);  // Should include 50LL, 75LL, 100LL, 'a'
     auto it = result.begin();
 
-    if (std::holds_alternative<long long>(it->getKey())) EXPECT_EQ(std::get<long long>(it->getKey()), 50LL); it++;
-    if (std::holds_alternative<long long>(it->getKey())) EXPECT_EQ(std::get<long long>(it->getKey()), 75LL); it++;
-    if (std::holds_alternative<long long>(it->getKey())) EXPECT_EQ(std::get<long long>(it->getKey()), 100LL); it++;
-    if (std::holds_alternative<char>(it->getKey())) EXPECT_EQ(std::get<char>(it->getKey()), 'a');
+    if (it->getKey().has_long_key()) EXPECT_EQ(it->getKey().long_key(), 50LL); it++;
+    if (it->getKey().has_long_key()) EXPECT_EQ(it->getKey().long_key(), 75LL); it++;
+    if (it->getKey().has_long_key()) EXPECT_EQ(it->getKey().long_key(), 100LL); it++;
+    if (it->getKey().has_char_key()) EXPECT_EQ(it->getKey().char_key(), "a");
 
     delete tree;
 }

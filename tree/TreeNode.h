@@ -10,15 +10,15 @@ enum Color {RED, BLACK, DOUBLE_BLACK, NA};
 
 class TreeNode {
     public:
-        KeyValue keyValue;
+        KeyValueWrapper keyValue;
         TreeNode* left;
         TreeNode* right;
         TreeNode* parent;
         int color;
 
         // Constructor that directly takes key and value
-        TreeNode(KeyValue kv);  // Insert RED node as default
-        TreeNode(KeyValue kv, Color c);
+        TreeNode(KeyValueWrapper kv);  // Insert RED node as default
+        TreeNode(KeyValueWrapper kv, Color c);
 
         template<typename K, typename V>
         TreeNode(K key, V value);

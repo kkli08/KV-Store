@@ -9,10 +9,10 @@
 // TreeNode::TreeNode(long long _key, long long _value, Color c) : key(_key), value(_value), left(nullptr), right(nullptr), parent(nullptr), color(c) {}
 
 // Constructor with default RED color
-TreeNode::TreeNode(KeyValue kv)
+TreeNode::TreeNode(KeyValueWrapper kv)
     : keyValue(kv), left(nullptr), right(nullptr), parent(nullptr), color(RED) {}
 
 // Constructor with custom color
-TreeNode::TreeNode(KeyValue kv, Color c)
+TreeNode::TreeNode(KeyValueWrapper kv, Color c)
     : keyValue(kv), left(nullptr), right(nullptr), parent(nullptr), color(c) {}
 
