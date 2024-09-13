@@ -2,6 +2,10 @@
 ![Multi-Platform Unit Tests](https://github.com/kkli08/KV-Store/actions/workflows/cmake-multi-platform.yml/badge.svg)
 
 Stores key-value pairs and allows retrieval of a value based on its key.
+> 2024-09-12 Restructure data storage with Protobuf. 
+> 
+> Latest KvDB Repo --> [here](https://github.com/kkli08/KvDB)
+
 > 2024-09-09 Support Template<typename K, typename V> 
 ```c++
 enum class KeyValueType { INT, LONG, DOUBLE, CHAR, STRING };
